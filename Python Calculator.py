@@ -1,7 +1,7 @@
 import math
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QGridLayout, QPushButton, QVBoxLayout, QSizePolicy, \
-    QRadioButton, QLabel, QHBoxLayout, QButtonGroup, QListWidget, QMainWindow, QFrame, QStackedWidget
+    QRadioButton, QLabel, QHBoxLayout, QButtonGroup, QListWidget, QMainWindow, QFrame, QStackedWidget, QComboBox
 
 # QListWidget helps to display history
 # QSizePolicy helps to scale the widgets in accordance to the window
@@ -210,9 +210,9 @@ class Calculator(QMainWindow):
                 font-family: calibri;""")
 
         # Grouping all the angle buttons in one group
-        self.theme_group = QButtonGroup(self)
-        self.theme_group.addButton(self.deg_mode)
-        self.theme_group.addButton(self.rad_mode)
+        self.angle_group = QButtonGroup(self)
+        self.angle_group.addButton(self.deg_mode)
+        self.angle_group.addButton(self.rad_mode)
 
 
         self.angle_mode = "deg"
@@ -242,6 +242,9 @@ class Calculator(QMainWindow):
         self.page_layout.addWidget(self.advanced_page) # Added Advanced page to the stack widget
         self.page_layout.setCurrentWidget(self.standard_page) # Defaults to the standard page
         main_layout.addWidget(self.page_layout)
+
+        self.conversions_page = self.create_conversions_page()
+        self.page_layout.addWidget(self.conversions_page)
 
         self.central_widget.setLayout(main_layout)
 
@@ -325,13 +328,14 @@ class Calculator(QMainWindow):
 
         elif mode == "Advanced":
             self.page_layout.setCurrentWidget(self.advanced_page)
-            self.set_current_history("standard")
             self.display.clear()
 
+
         elif mode == "Conversions":
-            self.page_layout.setCurrentWidget(self.create_conversions_page)
-            self.set_current_history("standard")
+            self.page_layout.addWidget(self.conversions_page)
+            self.page_layout.setCurrentWidget(self.conversions_page)
             self.display.clear()
+
         self.sidebar.hide()
         # Hide the sidebar when the user selects desired button
 
@@ -839,9 +843,9 @@ class Calculator(QMainWindow):
             self.current_history = self.standard_history
         elif mode == "advanced":
             self.current_history = self.adv_history
+        elif mode == "conversions":
+            self.current_history = None # Conversions page doesn't need history
 
-    def create_conversions_page(self):
-        pass
 
     def action_on_click(self):
         button = self.sender()
@@ -1258,6 +1262,426 @@ class Calculator(QMainWindow):
         except ValueError:
             self.display.setText("Error")
 
+    def create_conversions_page(self):
+        page = QWidget()
+        layout = QVBoxLayout()
+
+        # Creating the title:
+        title = QLabel("Unit Converter")
+        title.setStyleSheet("font-size: 24px;"
+                            "font-weight: bold;"
+                            "padding: 10px;")
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        # Creating the conversion types list:
+        self.conversion_list = QListWidget()
+        self.conversion_list.setStyleSheet("""
+                QListWidget {
+                    font-size: 18px;
+                    padding: 5px;
+                    border: 2px solid #ccc;
+                    border-radius: 8px;
+                }
+                QListWidget::item {
+                    padding: 12px;
+                    border-radius: 4px;
+                    margin: 2px;
+                }
+                QListWidget::item:hover {
+                    background-color: #e3f2fd;
+                }
+                QListWidget::item:selected {
+                    background-color: #2196f3;
+                    color: white;
+                }
+            """)
+
+        # Adding conversion categories to the list:
+        conversion_types = ["Length", "Weight and Mass", "Volume", "Temperature", "Energy", "Area", "Speed", "Time",
+                            "Power", "Data", "Pressure", "Angle"]
+
+        self.conversion_list.addItems(conversion_types)
+        # Fixed: using itemClicked instead of clicked
+        self.conversion_list.itemClicked.connect(self.open_conversion_calculator)
+
+        self.conversion_list.setFixedHeight(350)
+
+        layout.addWidget(self.conversion_list)
+
+        # Add some instructions
+        instruction = QLabel("Select a conversion type above to get started")
+        instruction.setStyleSheet("font-size: 16px; color: #666; padding: 15px;")
+        instruction.setAlignment(Qt.AlignCenter)
+        layout.addWidget(instruction)
+
+        # Adding conversion data types for all types:
+        self.conversion_data = {
+            "Length": {
+                "base_unit": "meter",
+                "units": {
+                    "Nanometer": 1e-9,
+                    "Micrometer": 1e-6,
+                    "Millimeter": 0.001,
+                    "Centimeter": 0.01,
+                    "Meter": 1.0,
+                    "Kilometer": 1000.0,
+                    "Inch": 0.0254,
+                    "Foot": 0.3048,
+                    "Yard": 0.9144,
+                    "Mile": 1609.34,
+                    "Nautical Mile": 1852.0
+                }
+            },
+            "Weight and Mass": {
+                "base_unit": "kilogram",
+                "units": {
+                    "Microgram": 1e-9,
+                    "Milligram": 1e-6,
+                    "Gram": 0.001,
+                    "Kilogram": 1.0,
+                    "Metric Ton": 1000.0,
+                    "Ounce": 0.0283495,
+                    "Pound": 0.453592,
+                    "Stone": 6.35029,
+                    "Short Ton": 907.185,
+                    "Long Ton": 1016.05
+                }
+            },
+            "Temperature": {
+                "special": True,  # Special handling needed
+                "units": ["Celsius", "Fahrenheit", "Kelvin", "Rankine"]
+            },
+            "Area": {
+                "base_unit": "square meter",
+                "units": {
+                    "Square Millimeter": 1e-6,
+                    "Square Centimeter": 1e-4,
+                    "Square Meter": 1.0,
+                    "Hectare": 10000.0,
+                    "Square Kilometer": 1e6,
+                    "Square Inch": 0.00064516,
+                    "Square Foot": 0.092903,
+                    "Square Yard": 0.836127,
+                    "Acre": 4046.86,
+                    "Square Mile": 2.59e6
+                }
+            },
+            "Volume": {
+                "base_unit": "liter",
+                "units": {
+                    "Milliliter": 0.001,
+                    "Liter": 1.0,
+                    "Cubic Centimeter": 0.001,
+                    "Cubic Meter": 1000.0,
+                    "Fluid Ounce (US)": 0.0295735,
+                    "Cup (US)": 0.236588,
+                    "Pint (US)": 0.473176,
+                    "Quart (US)": 0.946353,
+                    "Gallon (US)": 3.78541,
+                    "Cubic Inch": 0.0163871,
+                    "Cubic Foot": 28.3168
+                }
+            },
+            "Speed": {
+                "base_unit": "meter per second",
+                "units": {
+                    "Meter per Second": 1.0,
+                    "Kilometer per Hour": 0.277778,
+                    "Mile per Hour": 0.44704,
+                    "Knot": 0.514444,
+                    "Foot per Second": 0.3048,
+                    "Mach": 343.0
+                }
+            },
+            "Time": {
+                "base_unit": "second",
+                "units": {
+                    "Nanosecond": 1e-9,
+                    "Microsecond": 1e-6,
+                    "Millisecond": 0.001,
+                    "Second": 1.0,
+                    "Minute": 60.0,
+                    "Hour": 3600.0,
+                    "Day": 86400.0,
+                    "Week": 604800.0,
+                    "Month": 2.628e6,
+                    "Year": 3.154e7
+                }
+            },
+            "Power": {
+                "base_unit": "watt",
+                "units": {
+                    "Watt": 1.0,
+                    "Kilowatt": 1000.0,
+                    "Horsepower": 745.7,
+                    "BTU per Hour": 0.293071,
+                    "Calorie per Second": 4.184,
+                    "Foot-Pound per Second": 1.35582
+                }
+            },
+            "Data": {
+                "base_unit": "byte",
+                "units": {
+                    "Bit": 0.125,
+                    "Byte": 1.0,
+                    "Kilobyte": 1024.0,
+                    "Megabyte": 1.049e6,
+                    "Gigabyte": 1.074e9,
+                    "Terabyte": 1.1e12,
+                    "Petabyte": 1.126e15
+                }
+            },
+            "Pressure": {
+                "base_unit": "pascal",
+                "units": {
+                    "Pascal": 1.0,
+                    "Kilopascal": 1000.0,
+                    "Bar": 100000.0,
+                    "PSI": 6894.76,
+                    "Atmosphere": 101325.0,
+                    "Torr": 133.322,
+                    "mmHg": 133.322
+                }
+            },
+            "Angle": {
+                "base_unit": "radian",
+                "units": {
+                    "Degree": 0.0174533,
+                    "Radian": 1.0,
+                    "Gradian": 0.0157080,
+                    "Turn": 6.28319,
+                    "Arcminute": 0.000290888,
+                    "Arcsecond": 4.8481e-6
+                }
+            },
+            "Energy": {
+                "base_unit": "joule",
+                "units": {
+                    "Joule": 1.0,
+                    "Kilojoule": 1000.0,
+                    "Calorie": 4.184,
+                    "Kilocalorie": 4184.0,
+                    "BTU": 1055.06,
+                    "Watt Hour": 3600.0,
+                    "Kilowatt Hour": 3.6e6,
+                    "Electronvolt": 1.602e-19,
+                    "Foot-Pound": 1.35582
+                }
+            }
+        }
+
+        page.setLayout(layout)
+        return page
+
+    def open_conversion_calculator(self, item):
+        """Open the specific conversion calculator for the selected type"""
+        conversion_type = item.text()
+
+        # Store the current conversion type as instance variable
+        self.current_conversion_type = conversion_type
+
+        # Create a new page for this specific conversion
+        conversion_page = self.create_specific_conversion_page(conversion_type)
+
+        # Add to stack if not already there
+        page_name = f"{conversion_type.lower().replace(' ', '_')}_page"
+        if not hasattr(self, page_name):
+            setattr(self, page_name, conversion_page)
+            self.page_layout.addWidget(conversion_page)
+
+        # Switch to this conversion page
+        self.page_layout.setCurrentWidget(getattr(self, page_name))
+        self.mode_label.setText(f"Conversions - {conversion_type}")
+
+    def create_specific_conversion_page(self, conversion_type):
+        """Create a specific conversion calculator page"""
+        page = QWidget()
+        layout = QVBoxLayout()
+
+        # Back button
+        back_layout = QHBoxLayout()
+        back_button = QPushButton("← Back to Conversions")
+        back_button.setStyleSheet("""
+                QPushButton {
+                    font-size: 16px;
+                    padding: 8px 15px;
+                    background-color: #f0f0f0;
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                }
+                QPushButton:hover {
+                    background-color: #e0e0e0;
+                }
+            """)
+        # No parameters needed - uses instance variable approach
+        back_button.clicked.connect(self.go_back_to_conversions)
+        back_layout.addWidget(back_button)
+        back_layout.addStretch()
+        layout.addLayout(back_layout)
+
+        # Creating a title based on the selected conversion type:
+        title = QLabel(f"{conversion_type} Conversion")
+        title.setStyleSheet("font-size: 22px;"
+                            "font-weight: bold;"
+                            "padding: 15px;")
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        # Fixed: Creating a proper VBoxLayout for conversions
+        conversion_layout = QVBoxLayout()
+
+        # Creating the 'From' part:
+        from_layout = QHBoxLayout()
+        from_value = QLineEdit()
+        from_value.setPlaceholderText("Enter value")
+        from_value.setStyleSheet("font-size: 18px;"
+                                 "padding: 10px;"
+                                 "min-width: 150px;")
+
+        from_unit = QComboBox()
+        from_unit.setStyleSheet("font-size: 16px;"
+                                "padding: 8px;"
+                                "min-width: 150px;")
+
+        from_layout.addWidget(QLabel("From:"))
+        from_layout.addWidget(from_value)
+        from_layout.addWidget(from_unit)
+        conversion_layout.addLayout(from_layout)
+
+        # Creating the 'To' part:
+        to_layout = QHBoxLayout()
+        to_value = QLineEdit()
+        to_value.setReadOnly(True)  # Result field should be read-only
+        to_value.setStyleSheet("font-size: 18px;"
+                               "padding: 10px;"
+                               "background-color: #f5f5f5;"
+                               "min-width: 150px;")
+
+        to_unit = QComboBox()
+        to_unit.setStyleSheet("font-size: 16px;"
+                              "padding: 8px;"
+                              "min-width: 150px;")
+
+        # Fixed: Label should say "To:" not "From:"
+        to_layout.addWidget(QLabel("To:"))
+        to_layout.addWidget(to_value)
+        to_layout.addWidget(to_unit)
+        conversion_layout.addLayout(to_layout)
+
+        # Add the conversion layout to main layout
+        layout.addLayout(conversion_layout)
+
+        # Store references for this conversion type
+        setattr(self, f"{conversion_type.lower().replace(' ', '_')}_from_value", from_value)
+        setattr(self, f"{conversion_type.lower().replace(' ', '_')}_to_value", to_value)
+        setattr(self, f"{conversion_type.lower().replace(' ', '_')}_from_unit", from_unit)
+        setattr(self, f"{conversion_type.lower().replace(' ', '_')}_to_unit", to_unit)
+
+        # Setup units for the dropdowns
+        self.setup_conversion_units(conversion_type, from_unit, to_unit)
+
+        # Connect to parameterless methods using instance variables
+        from_value.textChanged.connect(self.perform_current_conversion)
+        from_unit.currentTextChanged.connect(self.perform_current_conversion)
+        to_unit.currentTextChanged.connect(self.perform_current_conversion)
+
+        layout.addStretch()
+        page.setLayout(layout)
+        return page
+
+    def perform_current_conversion(self):
+        """Perform conversion using the stored current_conversion_type"""
+        if hasattr(self, 'current_conversion_type'):
+            self.perform_specific_conversion(self.current_conversion_type)
+
+    def go_back_to_conversions(self):
+        """Return to the main conversions list"""
+        self.page_layout.setCurrentWidget(self.conversions_page)
+        self.mode_label.setText("Conversions")
+
+    # Supporting methods remain the same:
+
+    def setup_conversion_units(self, conversion_type, from_combo, to_combo):
+        """Setup the units for a specific conversion type"""
+        if conversion_type in self.conversion_data:
+            if conversion_type == "Temperature":
+                units = self.conversion_data[conversion_type]["units"]
+            else:
+                units = list(self.conversion_data[conversion_type]["units"].keys())
+
+            from_combo.addItems(units)
+            to_combo.addItems(units)
+
+            # Set different defaults
+            if len(units) > 1:
+                to_combo.setCurrentIndex(1)
+
+    def perform_specific_conversion(self, conversion_type):
+        """Perform conversion for a specific type"""
+        try:
+            # Get the widgets for this conversion type
+            attr_base = conversion_type.lower().replace(' ', '_')
+            from_value = getattr(self, f"{attr_base}_from_value")
+            to_value = getattr(self, f"{attr_base}_to_value")
+            from_unit = getattr(self, f"{attr_base}_from_unit")
+            to_unit = getattr(self, f"{attr_base}_to_unit")
+
+            input_text = from_value.text().strip()
+            if not input_text:
+                to_value.clear()
+                return
+
+            value = float(input_text)
+            from_unit_name = from_unit.currentText()
+            to_unit_name = to_unit.currentText()
+
+            # Perform conversion
+            if conversion_type == "Temperature":
+                result = self.convert_temperature(value, from_unit_name, to_unit_name)
+            else:
+                # Standard conversion
+                units_data = self.conversion_data[conversion_type]["units"]
+                from_factor = units_data[from_unit_name]
+                to_factor = units_data[to_unit_name]
+
+                # Convert to base unit, then to target unit
+                base_value = value * from_factor
+                result = base_value / to_factor
+
+            # Display result
+            result_text = self.format_result(result)
+            to_value.setText(result_text)
+
+        except ValueError:
+            to_value.setText("Invalid input")
+        except Exception:
+            to_value.setText("Error")
+
+    def convert_temperature(self, value, from_unit, to_unit):
+        """Handle temperature conversions"""
+        if from_unit == to_unit:
+            return value
+
+        # Convert to Celsius first
+        if from_unit == "Fahrenheit":
+            celsius = (value - 32) * 5 / 9
+        elif from_unit == "Kelvin":
+            celsius = value - 273.15
+        elif from_unit == "Rankine":
+            celsius = (value - 491.67) * 5 / 9
+        else:  # Celsius
+            celsius = value
+
+        # Convert from Celsius to target
+        if to_unit == "Fahrenheit":
+            return celsius * 9 / 5 + 32
+        elif to_unit == "Kelvin":
+            return celsius + 273.15
+        elif to_unit == "Rankine":
+            return celsius * 9 / 5 + 491.67
+        else:  # Celsius
+            return celsius
 
 def main():
     app = QApplication(sys.argv)

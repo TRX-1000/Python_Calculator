@@ -323,19 +323,16 @@ class Calculator(QMainWindow):
             self.set_current_history("standard")  # or "advanced"
             # If you only pass self.create_standard_calc, you are only passing the function to the change_mode
             # function, not the page, so it will throw an error
-
             self.display.clear() # Clear the display while switching modes
 
         elif mode == "Advanced":
             self.page_layout.setCurrentWidget(self.advanced_page)
+            self.set_current_history("advanced")
             self.display.clear()
-
 
         elif mode == "Conversions":
-            self.page_layout.addWidget(self.conversions_page)
             self.page_layout.setCurrentWidget(self.conversions_page)
-            self.display.clear()
-
+            self.display_container.hide()
         self.sidebar.hide()
         # Hide the sidebar when the user selects desired button
 
@@ -361,6 +358,28 @@ class Calculator(QMainWindow):
                 padding: 7px;
                 border: 2px solid #ccc;
                 border-radius: 10px;
+            }
+            QLineEdit#conversion_input {
+                background-color: white;
+                color: black;
+                font-size: 19px;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+            }
+            QLineEdit#conversion_result {
+                background-color: #f5f5f5;
+                color: black;
+                font-size: 19px;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+            }
+            QComboBox#conversion_combo {
+                background-color: white;
+                color: black;
+                font-size: 20px;
+                font-family: calibri;
+                border: 2px solid #ccc;
+                border-radius: 8px;
             }
         """)
 
@@ -500,6 +519,30 @@ class Calculator(QMainWindow):
                                 color: black;
                             }
                         """)
+            self.conversion_list.setStyleSheet("""
+            QListWidget{
+                font-size: 18px;
+                padding: 5px;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                background-color: white;
+                color: black;
+            }
+            QListWidget::item {
+                padding: 12px;
+                border-radius: 4px;
+                margin: 2px;
+                background-color: white;
+            }
+            QListWidget::item:hover {
+                background-color: #e3f2fd;
+            }
+            QListWidget::item:selected {
+                background-color: #2196f3;
+                color: white;
+            }""")
+
+
 
         self.apply_sidebar_theme_light()
         # Here, if we call the same function (apply_light_theme), Python will throw a RecursionError
@@ -516,6 +559,24 @@ class Calculator(QMainWindow):
                 color: #ffffff;
                 font-size: 42px;
                 padding: 10px;
+                border: 2px solid #444;
+                border-radius: 10px;
+            }
+            QLineEdit#conversion_input {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                border: 2px solid #444;
+                border-radius: 10px;
+            }
+            QLineEdit#conversion_result {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                border: 2px solid #444;
+                border-radius: 10px;
+            }
+            QComboBox#conversion_combo {
+                background-color: #2b2b2b;
+                color: white;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
@@ -666,6 +727,30 @@ class Calculator(QMainWindow):
                                     color: white;
                                 }
                             """)
+
+        self.conversion_list.setStyleSheet("""
+                    QListWidget {
+                        font-size: 18px;
+                        padding: 5px;
+                        border: 2px solid #444;
+                        border-radius: 8px;
+                        background-color: #1e1e1e;
+                        color: white;
+                    }
+                    QListWidget::item {
+                        padding: 12px;
+                        border-radius: 4px;
+                        margin: 2px;
+                        background-color: #1e1e1e;
+                    }
+                    QListWidget::item:hover {
+                        background-color: #3c3c3c;
+                    }
+                    QListWidget::item:selected {
+                        background-color: #2196f3;
+                        color: white;
+                    }
+                """)
 
         self.apply_sidebar_theme_dark()
 
@@ -1533,16 +1618,13 @@ class Calculator(QMainWindow):
 
         # Creating the 'From' part:
         from_layout = QHBoxLayout()
+
         from_value = QLineEdit()
+        from_value.setObjectName("conversion_input")
         from_value.setPlaceholderText("Enter value")
-        from_value.setStyleSheet("font-size: 18px;"
-                                 "padding: 10px;"
-                                 "min-width: 150px;")
 
         from_unit = QComboBox()
-        from_unit.setStyleSheet("font-size: 16px;"
-                                "padding: 8px;"
-                                "min-width: 150px;")
+        from_unit.setObjectName("conversion_combo")
 
         from_layout.addWidget(QLabel("From:"))
         from_layout.addWidget(from_value)
@@ -1552,6 +1634,7 @@ class Calculator(QMainWindow):
         # Creating the 'To' part:
         to_layout = QHBoxLayout()
         to_value = QLineEdit()
+        to_value.setObjectName("conversion_result")
         to_value.setReadOnly(True)  # Result field should be read-only
         to_value.setStyleSheet("font-size: 18px;"
                                "padding: 10px;"
@@ -1559,9 +1642,7 @@ class Calculator(QMainWindow):
                                "min-width: 150px;")
 
         to_unit = QComboBox()
-        to_unit.setStyleSheet("font-size: 16px;"
-                              "padding: 8px;"
-                              "min-width: 150px;")
+        to_unit.setObjectName("conversion_combo")
 
         # Fixed: Label should say "To:" not "From:"
         to_layout.addWidget(QLabel("To:"))
@@ -1588,6 +1669,11 @@ class Calculator(QMainWindow):
 
         layout.addStretch()
         page.setLayout(layout)
+
+        if self.current_theme == 'light':
+            self.apply_light_theme()
+        else:
+            self.apply_dark_theme()
         return page
 
     def perform_current_conversion(self):

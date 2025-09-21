@@ -323,11 +323,13 @@ class Calculator(QMainWindow):
             self.set_current_history("standard")  # or "advanced"
             # If you only pass self.create_standard_calc, you are only passing the function to the change_mode
             # function, not the page, so it will throw an error
+            self.display_container.show()
             self.display.clear() # Clear the display while switching modes
 
         elif mode == "Advanced":
             self.page_layout.setCurrentWidget(self.advanced_page)
             self.set_current_history("advanced")
+            self.display_container.show()
             self.display.clear()
 
         elif mode == "Conversions":
@@ -563,20 +565,23 @@ class Calculator(QMainWindow):
                 border-radius: 10px;
             }
             QLineEdit#conversion_input {
-                background-color: #2b2b2b;
+                background-color: #1e1e1e;
                 color: #ffffff;
+                font-size: 19px;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
             QLineEdit#conversion_result {
-                background-color: #2b2b2b;
-                color: #ffffff;
+                background-color: #1e1e1e;
+                color: black;
+                font-size: 19px;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
             QComboBox#conversion_combo {
-                background-color: #2b2b2b;
+                background-color: #1e1e1e;
                 color: white;
+                font-size: 19px;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
@@ -1587,18 +1592,9 @@ class Calculator(QMainWindow):
         # Back button
         back_layout = QHBoxLayout()
         back_button = QPushButton("← Back to Conversions")
-        back_button.setStyleSheet("""
-                QPushButton {
-                    font-size: 16px;
-                    padding: 8px 15px;
-                    background-color: #f0f0f0;
-                    border: 1px solid #ccc;
-                    border-radius: 5px;
-                }
-                QPushButton:hover {
-                    background-color: #e0e0e0;
-                }
-            """)
+        if self.current_theme == 'dark':
+            back_button.setStyleSheet("font-size: 15px;")
+
         # No parameters needed - uses instance variable approach
         back_button.clicked.connect(self.go_back_to_conversions)
         back_layout.addWidget(back_button)
@@ -1626,7 +1622,10 @@ class Calculator(QMainWindow):
         from_unit = QComboBox()
         from_unit.setObjectName("conversion_combo")
 
-        from_layout.addWidget(QLabel("From:"))
+        from_label = QLabel("From:")
+        from_label.setFixedWidth(50)
+
+        from_layout.addWidget(from_label)
         from_layout.addWidget(from_value)
         from_layout.addWidget(from_unit)
         conversion_layout.addLayout(from_layout)
@@ -1636,16 +1635,15 @@ class Calculator(QMainWindow):
         to_value = QLineEdit()
         to_value.setObjectName("conversion_result")
         to_value.setReadOnly(True)  # Result field should be read-only
-        to_value.setStyleSheet("font-size: 18px;"
-                               "padding: 10px;"
-                               "background-color: #f5f5f5;"
-                               "min-width: 150px;")
 
         to_unit = QComboBox()
         to_unit.setObjectName("conversion_combo")
 
-        # Fixed: Label should say "To:" not "From:"
-        to_layout.addWidget(QLabel("To:"))
+        to_label = QLabel("To:")
+        to_label.setFixedWidth(50)
+
+        to_layout.addWidget(to_label)
+
         to_layout.addWidget(to_value)
         to_layout.addWidget(to_unit)
         conversion_layout.addLayout(to_layout)

@@ -4,8 +4,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QGridLayout, QPush
     QRadioButton, QLabel, QHBoxLayout, QButtonGroup, QListWidget, QMainWindow, QFrame, QStackedWidget, QComboBox
 
 # QListWidget helps to display history
-# QSizePolicy helps to scale the widgets in accordance to the window
-# QDockWidget helps to create a detachable side panel (like the one in the Windows Calculator)
+# QSizePolicy helps to scale the widgets in accordance to the window size
 from PyQt5.QtCore import Qt  # For alignment
 
 
@@ -58,6 +57,7 @@ class Calculator(QMainWindow):
         self.adv_history. setObjectName("advanced")
 
         self.set_current_history("standard")
+        # Default history is 'standard' since default page is 'standard
 
         # Create central widget: In QMainWindow, you can't just add layouts directly; you need to set a centralWidget
         # that holds the main layout
@@ -573,7 +573,7 @@ class Calculator(QMainWindow):
             }
             QLineEdit#conversion_result {
                 background-color: #1e1e1e;
-                color: black;
+                color: #ffffff;
                 font-size: 19px;
                 border: 2px solid #444;
                 border-radius: 10px;
@@ -1088,8 +1088,80 @@ class Calculator(QMainWindow):
     def evaluate_expression(self):
 
         try:
-            expression = self.display.text()
+            expression = self.display.text().strip()
             # Getting the expression typed in by the user
+
+            original_expression = expression
+            # Keeping the original expression for adding to history
+
+            # 1. Handling the nCr operation:
+            if 'C' in expression:
+                try:
+                    parts = expression.split(' C ')
+                    if len(parts) == 2:
+                        n = int(float(parts[0]))
+                        r = int(float(parts[1]))
+
+                        if n >= 0 and r >= 0 and n >= r:
+                            result = math.factorial(n) // (math.factorial(r) * math.factorial(n-r))
+                            self.current_history.addItem(f"{original_expression} = {result}")
+                            self.current_history.scrollToBottom()
+                            self.display.setText(str(result))
+                            self.just_calculated = True
+                            return
+
+                        else:
+                            self.display.setText("Error")
+                            return
+
+                except:
+                    self.display.setText("Error")
+                    return
+
+            # 2. Handling the nPr operation:
+            if 'P' in expression:
+                try:
+                    parts = expression.split('P')
+                    if len(parts) == 2:
+                        n = int(float(parts[0]))
+                        r = int(float(parts[1]))
+
+                        if n >= 0 and r >= 0 and n >= r:
+                            result = math.factorial(n) // (math.factorial(r) * math.factorial(n-r))
+                            self.current_history.addItem(f"{original_expression} = {result}")
+                            self.current_history.scrollToBottom()
+                            self.display.setText(str(result))
+                            self.just_calculated = True
+                            return
+
+                        else:
+                            self.display.setText("Error")
+                            return
+
+                except:
+                    self.display.setText("Error")
+                    return
+
+                # Handle mod operations
+                if ' mod ' in expression:
+                    try:
+                        parts = expression.split(' mod ')
+                        if len(parts) == 2:
+                            a = float(parts[0])
+                            b = float(parts[1])
+                            if b != 0:
+                                result = a % b
+                                self.current_history.addItem(f"{original_expression} = {result}")
+                                self.current_history.scrollToBottom()
+                                self.display.setText(str(result))
+                                self.just_calculated = True
+                                return
+                            else:
+                                self.display.setText("Error")
+                                return
+                    except:
+                        self.display.setText("Error")
+                        return
 
             expression = expression.replace('×', '*').replace('÷', '/')
 
@@ -1224,130 +1296,162 @@ class Calculator(QMainWindow):
 
     def advanced_buttons_clicked(self):
         button = self.sender()
-        # return the object that triggered this event (here, clicked button is the sender)
-
         text = button.text()
-        # Gets the label (text) that is on the clicked button
 
+        # Handle buttons that don't need numeric conversion first
+        if text == 'C':
+            self.display.clear()
+            return
+
+        elif text == "⌫":
+            current = self.display.text()
+            self.display.setText(current[:-1])
+            return
+
+        elif text == '=':
+            self.evaluate_expression()
+            return
+
+        elif text in ['(', ')']:
+            current = self.display.text()
+            self.display.setText(current + text)
+            return
+
+        elif text == 'π':
+            current = self.display.text()
+            self.display.setText(current + str(math.pi))
+            return
+
+        elif text == 'e':
+            current = self.display.text()
+            self.display.setText(current + "e")
+            return
+
+        elif text.isdigit() or text in ['+', '-', '×', '÷', '.', '±']:
+            current = self.display.text()
+            if text == '×':
+                self.display.setText(current + '*')
+            elif text == '÷':
+                self.display.setText(current + '/')
+            elif text == '±':
+                if current.startswith("-"):
+                    self.display.setText(current[1:])
+                elif current:
+                    self.display.setText("-" + current)
+            else:
+                self.display.setText(current + text)
+            return
+
+
+        elif text in ['mod', 'nCr', 'nPr', 'xʸ']:
+            current = self.display.text()
+
+            if text == 'mod':
+                self.display.setText(current + ' mod ')
+            elif text == 'nCr':
+                self.display.setText(current + 'C')
+            elif text == 'nPr':
+                self.display.setText(current + 'P')
+            elif text == 'xʸ':
+                self.display.setText(current + '**')
+
+            return
+
+        # Now handle buttons that need numeric input
         try:
-            # Make sure there is a number in the display
             if not self.display.text():
                 self.display.setText("Error")
                 return
 
-            value = float(self.display.text()) # Converting once safely
+            value = float(self.display.text())  # Now we define 'value' here
 
-            # Making the power functions work:
-            if text == "exp":
-                value = float(value) if value else 0
-                result = value * (10 ** value)
-                self.add_to_history("exp", value, result)
-
-            elif text == 'x²':
-                value = float(value) if value else 0
+            # Mathematical functions
+            if text == 'x²':
                 result = value ** 2
                 self.add_to_history(f"{value}²", value, result)
 
             elif text == 'x³':
-                value = float(value) if value else 0
                 result = value ** 3
                 self.add_to_history(f"{value}³", value, result)
 
             elif text == '√x':
-                value = float(value) if value else 0
-                result = math.sqrt(value)
+                result = math.sqrt(abs(value))
                 self.add_to_history(f"√{value}", value, result)
 
             elif text == '³√x':
-                value = float(value) if value else 0
-                result = value ** (1/3)
+                result = value ** (1 / 3)
                 self.add_to_history(f"³√{value}", value, result)
 
             elif text == '10^x':
-                value = float(value)
                 result = 10 ** value
                 self.add_to_history(f"10^{value}", value, result)
 
             elif text == 'exp':
-                value = float(value)
                 result = math.exp(value)
                 self.add_to_history(f"e^{value}", value, result)
 
-            elif text == 'xʸ':
-                value = float(value)
-                self.display.setText(self.display.text() + '**')
-
-            # Making the trig functions work:
-            if text == "sin":
-                try:
-                    if self.angle_mode == "deg":
-                        value = math.radians(value)
-                    result = math.sin(value)
-                    self.add_to_history("sin", value, result)
-
-                except ValueError:
+            elif text == 'n!':
+                if value == int(value) and value >= 0:
+                    result = math.factorial(int(value))
+                    self.add_to_history(f"{int(value)}!", int(value), result)
+                else:
                     self.display.setText("Error")
+                    return
+
+            # Trigonometric functions
+            elif text == "sin":
+                angle_rad = math.radians(value) if self.angle_mode == "deg" else value
+                result = math.sin(angle_rad)
+                self.add_to_history("sin", value, result, f"({self.angle_mode})")
 
             elif text == "cos":
-                try:
-                    if self.angle_mode == "deg":
-                        value = math.radians(value)
-                    result = math.cos(value)
-                    self.add_to_history("cos", value, result)
-
-                except ValueError:
-                    self.display.setText("Error")
+                angle_rad = math.radians(value) if self.angle_mode == "deg" else value
+                result = math.cos(angle_rad)
+                self.add_to_history("cos", value, result, f"({self.angle_mode})")
 
             elif text == "tan":
-                try:
-                    if self.angle_mode == "deg":
-                        value = math.radians(value)
-                    result = math.tan(value)
-                    self.add_to_history("tan", value, result)
-
-                except ValueError:
-                    self.display.setText("Error")
+                angle_rad = math.radians(value) if self.angle_mode == "deg" else value
+                result = math.tan(angle_rad)
+                self.add_to_history("tan", value, result, f"({self.angle_mode})")
 
             elif text == "asin":
-                try:
-                    if self.angle_mode == "deg":
-                        value = math.radians(value)
-                    result = math.asin(value)
-                    self.add_to_history("sin", value, result)
-
-                except ValueError:
+                if -1 <= value <= 1:
+                    result_rad = math.asin(value)
+                    result = math.degrees(result_rad) if self.angle_mode == "deg" else result_rad
+                    self.add_to_history("asin", value, result, f"({self.angle_mode})")
+                else:
                     self.display.setText("Error")
+                    return
 
             elif text == "acos":
-                try:
-                    if self.angle_mode == "deg":
-                        value = math.radians(value)
-                    result = math.acos(value)
-                    self.add_to_history("acos", value, result)
-
-                except ValueError:
+                if -1 <= value <= 1:
+                    result_rad = math.acos(value)
+                    result = math.degrees(result_rad) if self.angle_mode == "deg" else result_rad
+                    self.add_to_history("acos", value, result, f"({self.angle_mode})")
+                else:
                     self.display.setText("Error")
+                    return
 
             elif text == "atan":
-                try:
-                    if self.angle_mode == "deg":
-                        value = math.radians(value)
-                    result = math.atan(value)
-                    self.add_to_history("atan", value, result)
+                result_rad = math.atan(value)
+                result = math.degrees(result_rad) if self.angle_mode == "deg" else result_rad
+                self.add_to_history("atan", value, result, f"({self.angle_mode})")
 
-                except ValueError:
-
+            elif text == "log":
+                if value > 0:
+                    result = math.log10(value)
+                    self.add_to_history("log", value, result)
+                else:
                     self.display.setText("Error")
+                    return
 
-            elif text == '=':
-                self.evaluate_expression()
-
-            elif text == 'C':
-                self.display.clear()
-
-            elif text == "⌫":
-                current = self.display.text()
-                self.display.setText(current[:-1])
+            elif text == "ln":
+                if value > 0:
+                    result = math.log(value)
+                    self.add_to_history("ln", value, result)
+                else:
+                    self.display.setText("Error")
+                    return
 
         except ValueError:
             self.display.setText("Error")
@@ -1593,6 +1697,8 @@ class Calculator(QMainWindow):
         back_layout = QHBoxLayout()
         back_button = QPushButton("← Back to Conversions")
         if self.current_theme == 'dark':
+            back_button.setStyleSheet("font-size: 20px;")
+        if self.current_theme == 'light':
             back_button.setStyleSheet("font-size: 15px;")
 
         # No parameters needed - uses instance variable approach

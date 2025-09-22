@@ -27,6 +27,7 @@ class Calculator(QMainWindow):
         self.standard_buttons = []
         self.advanced_buttons = []
         self.more_buttons = []
+        self.numpad_buttons = []
 
         # Fixing the display issue so that both the standard and the advanced modes
         # use the same display
@@ -54,7 +55,7 @@ class Calculator(QMainWindow):
         # Creating a history widget for advanced mode:
         self.adv_history = QListWidget()
         self.adv_history.setFixedHeight(100)
-        self.adv_history. setObjectName("advanced")
+        self.adv_history.setObjectName("advanced")
 
         self.set_current_history("standard")
         # Default history is 'standard' since default page is 'standard
@@ -154,7 +155,7 @@ class Calculator(QMainWindow):
         self.menu_button.clicked.connect(self.toggle_sidebar)
 
         self.mode_label = QLabel("Standard")
-        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold;")
+        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto;")
         top_bar.addWidget(self.menu_button)
         top_bar.addWidget(self.mode_label)
         top_bar.addStretch()  # Pushes everything to the left side
@@ -169,12 +170,12 @@ class Calculator(QMainWindow):
         self.dark_mode = QRadioButton("Dark mode")
         self.light_mode.setChecked(True)  # Defaults to light mode
 
-        theme_label.setStyleSheet("font-size: 18px;"
-                                  "font-family: calibri;")
-        self.light_mode.setStyleSheet("font-size: 18px;"
-                                      "font-family: calibri;")
-        self.dark_mode.setStyleSheet("font-size: 18px;"
-                                     "font-family: calibri;")
+        theme_label.setStyleSheet("font-size: 15px;"
+                                  "font-family: Roboto;")
+        self.light_mode.setStyleSheet("font-size: 15px;"
+                                      "font-family: Roboto;")
+        self.dark_mode.setStyleSheet("font-size: 15px;"
+                                     "font-family: Roboto;")
 
 
         # Grouping the theme buttons together
@@ -199,15 +200,15 @@ class Calculator(QMainWindow):
 
         self.angle_label.setStyleSheet("""
         font-size: 18px;
-        font-family: calibri;""")
+        font-family: Roboto;""")
 
         self.deg_mode.setStyleSheet("""
                 font-size: 18px;
-                font-family: calibri;""")
+                font-family: Roboto;""")
 
         self.rad_mode.setStyleSheet("""
                 font-size: 18px;
-                font-family: calibri;""")
+                font-family: Roboto;""")
 
         # Grouping all the angle buttons in one group
         self.angle_group = QButtonGroup(self)
@@ -348,38 +349,41 @@ class Calculator(QMainWindow):
             self.current_theme = "dark"
 
     def apply_light_theme(self):
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #f9f9f9;
-                color: #000000;
-            }
-            QLineEdit {
+        self.display.setStyleSheet("""QLineEdit {
                 background-color: #ffffff;
                 color: #000000;
                 font-size: 42px;
                 padding: 7px;
                 border: 2px solid #ccc;
                 border-radius: 10px;
+                }""")
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f9f9f9;
+                color: #000000;
             }
             QLineEdit#conversion_input {
                 background-color: white;
                 color: black;
-                font-size: 19px;
+                font-size: 23px;
+                font-familty: SF Mono;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }
             QLineEdit#conversion_result {
                 background-color: #f5f5f5;
                 color: black;
-                font-size: 19px;
+                font-size: 23px;
+                font-family: SF Mono;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }
             QComboBox#conversion_combo {
                 background-color: white;
                 color: black;
-                font-size: 20px;
-                font-family: calibri;
+                font-size: 23px;
+                font-family: Roboto;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }
@@ -390,9 +394,10 @@ class Calculator(QMainWindow):
             if text in ['+', '-', '×', '÷', '1/x', '%']:
                 button.setStyleSheet("""
                     QPushButton {
-                        background-color: #e0e7ff;  /* Soft blue-gray */
+                        background-color: #e0e7ff;  
                         color: #1e3a8a;
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                         border: 1px solid #cbd5e1;
                     }
@@ -403,9 +408,10 @@ class Calculator(QMainWindow):
             elif text in ['C', '⌫']:
                 button.setStyleSheet("""
                     QPushButton {
-                        background-color: #f8d7da;  /* Soft red tint */
+                        background-color: #f8d7da; 
                         color: #842029;
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 8px;
                         border: 1px solid #f5c2c7;
                     }
@@ -416,9 +422,10 @@ class Calculator(QMainWindow):
             elif text == '=':
                 button.setStyleSheet("""
                     QPushButton {
-                        background-color: #198754;  /* Bootstrap green */
+                        background-color: #198754; 
                         color: white;
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                     }
                     QPushButton:hover {
@@ -431,9 +438,10 @@ class Calculator(QMainWindow):
                           'x²', '√x', 'xʸ']:
                 button.setStyleSheet("""
                                     QPushButton {
-                                        background-color: #fbd9ff;  /* Soft red tint */
+                                        background-color: #fbd9ff;  
                                         color: #8f249c;
                                         font-size: 22px;
+                                        font-family: Inter;
                                         border-radius: 8px;
                                         border: 1px solid #fff;
                                     }
@@ -444,9 +452,10 @@ class Calculator(QMainWindow):
             else:
                 button.setStyleSheet("""
                     QPushButton {
-                        background-color: #e9ecef;  /* Neutral gray */
+                        background-color: #e9ecef;  
                         color: #212529;
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                         border: 1px solid #dee2e6;
                     }
@@ -460,6 +469,7 @@ class Calculator(QMainWindow):
                                 background-color: #ffebd6; 
                                 color: #cc6600;
                                 font-size: 20px;
+                                font-family: Inter;
                                 border-radius: 5px;
                                 border: 1px solid #cbd5e1;
                             }
@@ -475,9 +485,10 @@ class Calculator(QMainWindow):
         for button in self.extra_btn_objs:
             button.setStyleSheet("""
                                 QPushButton {
-                                background-color: #e0e7ff;  /* Soft blue-gray */
+                                background-color: #e0e7ff;  
                                 color: #1e3a8a;
                                 font-size: 25px;
+                                font-family: Inter;
                                 border-radius: 5px;
                                 border: 1px solid #cbd5e1;
                                 }
@@ -491,6 +502,7 @@ class Calculator(QMainWindow):
                     background-color: white;
                     color: black;
                     font-size: 18px;
+                    font-family: Inter;
                     border: 2px solid #ccc;
                     border-radius: 10px;
                     padding: 5px;
@@ -499,7 +511,7 @@ class Calculator(QMainWindow):
                     padding: 8px;
                 }
                 QListWidget::item:selected#history_list {
-                    background-color: #ddd;   /* light gray highlight */
+                    background-color: #ddd;   
                     color: black;
                 }
             """)
@@ -509,6 +521,7 @@ class Calculator(QMainWindow):
                                 background-color: white;
                                 color: black;
                                 font-size: 18px;
+                                font-family: Inter;
                                 border: 2px solid #ccc;
                                 border-radius: 10px;
                                 padding: 5px;
@@ -517,16 +530,50 @@ class Calculator(QMainWindow):
                                 padding: 8px;
                             }
                             QListWidget::item:selected#history_list {
-                                background-color: #ddd;   /* light gray highlight */
+                                background-color: #ddd;   
                                 color: black;
                             }
                         """)
+
+            for button in self.numpad_buttons:
+                text = button.text()
+                if text in ['C', '⌫']:
+                    button.setStyleSheet("""
+                                        QPushButton {
+                                            background-color: #f8d7da; 
+                                            color: #842029;
+                                            font-size: 25px;
+                                            font-family: Inter;
+                                            border-radius: 8px;
+                                            border: 1px solid #f5c2c7;
+                                        }
+                                        QPushButton:hover {
+                                            background-color: #f5c2c7;
+                                        }
+                                                """)
+                else:
+                    button.setStyleSheet("""
+                                        QPushButton {
+                                            color: #212529;
+                                            background-color: #e9ecef;
+                                            border: 1px solid #dee2e6;
+                                            border-radius: 5px;
+                                            font-size: 25px;
+                                            font-family: Inter;
+                                            color: #333;
+                                        }
+                                        QPushButton:hover {
+                                            background-color: #dee2e6; 
+                                         }
+                                                """)
+
             self.conversion_list.setStyleSheet("""
             QListWidget{
                 font-size: 18px;
                 padding: 5px;
                 border: 2px solid #ccc;
                 border-radius: 8px;
+                font-family: Inter;
                 background-color: white;
                 color: black;
             }
@@ -551,50 +598,87 @@ class Calculator(QMainWindow):
         # as the function is being called infinite number of times
 
     def apply_dark_theme(self):
+        self.display.setStyleSheet("""QLineEdit {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                font-size: 42px;
+                font-family: SF Mono;
+                padding: 10px;
+                border: 2px solid #444;
+                border-radius: 10px;
+            }""")
+
         self.setStyleSheet("""
             QWidget {
                 background-color: #2b2b2b;
                 color: #ffffff;
             }
-            QLineEdit {
-                background-color: #2b2b2b;
-                color: #ffffff;
-                font-size: 42px;
-                padding: 10px;
-                border: 2px solid #444;
-                border-radius: 10px;
-            }
+            
             QLineEdit#conversion_input {
                 background-color: #1e1e1e;
                 color: #ffffff;
-                font-size: 19px;
+                font-size: 20px;
+                font-family: SF Mono;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
             QLineEdit#conversion_result {
                 background-color: #1e1e1e;
                 color: #ffffff;
-                font-size: 19px;
+                font-size: 20px;
+                font-family: SF Mono;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
             QComboBox#conversion_combo {
                 background-color: #1e1e1e;
                 color: white;
-                font-size: 19px;
+                font-size: 20px;
+                font-family: Roboto;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
         """)
+
+        for button in self.numpad_buttons:
+            text = button.text()
+            if text in ['C', '⌫']:
+                button.setStyleSheet("""
+                        QPushButton {
+                            color: #fca5a5;
+                            background-color: #5b2d2d;
+                            border: 1px solid #7f1d1d;
+                            border-radius: 5px;
+                            font-size: 16px;
+                            font-family: Inter;
+                            font-weight: bold;
+                            color: #fff;
+                        }
+                        QPushButton:hover { background-color: #7f1d1d; }
+                    """)
+            else:
+                button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #2d2d2d;
+                            color: #e5e7eb;
+                            font-size: 25px;
+                            font-family: Inter;
+                            border-radius: 5px;
+                            border: 1px solid #3f3f3f;
+                        }
+                        QPushButton:hover {
+                        background-color: #3f3f3f; }
+                    """)
 
         for button in self.standard_buttons + self.advanced_buttons:
             text = button.text()
             if text in ['+', '-', '×', '÷', '1/x', '%']:
                 button.setStyleSheet("""
                     QPushButton {
-                        background-color: #374151;  /* Cool gray */
-                        color: #93c5fd;            /* Soft blue text */
+                        background-color: #374151;  
+                        color: #93c5fd;            
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                         border: 1px solid #4b5563;
                     }
@@ -605,9 +689,10 @@ class Calculator(QMainWindow):
             elif text in ['C', '⌫']:
                 button.setStyleSheet("""
                     QPushButton {
-                        background-color: #5b2d2d;  /* Dark muted red */
+                        background-color: #5b2d2d;  
                         color: #fca5a5;
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                         border: 1px solid #7f1d1d;
                     }
@@ -618,9 +703,10 @@ class Calculator(QMainWindow):
             elif text == '=':
                 button.setStyleSheet("""
                     QPushButton {
-                        background-color: #14532d;  /* Dark green */
+                        background-color: #14532d;  
                         color: #bbf7d0;
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                     }
                     QPushButton:hover {
@@ -632,9 +718,10 @@ class Calculator(QMainWindow):
                           'log', 'ln', 'π', 'e', 'x²', 'x³', '√x', '³√x', '10^x', 'exp', 'xʸ', 'nCr', 'nPr', '(', ')']:
                 button.setStyleSheet("""
                                     QPushButton {
-                                        background-color: #473a7a;  /* Soft purple tint */
+                                        background-color: #473a7a;  
                                         color: #bdabff;
                                         font-size: 25px;
+                                        font-family: Inter;
                                         border-radius: 8px;
                                         border: 1px solid #1e1e1e;
                                     }
@@ -649,6 +736,7 @@ class Calculator(QMainWindow):
                         background-color: #2d2d2d;
                         color: #e5e7eb;
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                         border: 1px solid #3f3f3f;
                     }
@@ -659,9 +747,10 @@ class Calculator(QMainWindow):
 
         self.more_functions_button.setStyleSheet("""
                             QPushButton {
-                                background-color: #3b2a1f;  /* Soft blue-gray */
+                                background-color: #3b2a1f;  
                                 color: #ff9933;
                                 font-size: 20px;
+                                font-family: Inter;
                                 border-radius: 5px;
                                 border: 1px solid #3f3f3f;
                             }
@@ -677,9 +766,10 @@ class Calculator(QMainWindow):
         for button in self.extra_btn_objs:
             button.setStyleSheet("""
                     QPushButton {
-                        background-color: #374151;  /* Cool gray */
-                        color: #93c5fd;            /* Soft blue text */
+                        background-color: #374151;  
+                        color: #93c5fd;            
                         font-size: 25px;
+                        font-family: Inter;
                         border-radius: 5px;
                         border: 1px solid #4b5563;
                     }
@@ -692,6 +782,7 @@ class Calculator(QMainWindow):
             background-color: #1e1e1e;
             color: white;
             font-size: 50px;
+            font-family: SF Mono;
             padding: 10px;
             border: 2px #444;
             border-radius: 10px
@@ -702,6 +793,7 @@ class Calculator(QMainWindow):
                             background-color: #1e1e1e;
                             color: white;
                             font-size: 18px;
+                            font-family: Inter;
                             border: 2px solid #444;
                             border-radius: 10px;
                             padding: 5px;
@@ -710,7 +802,7 @@ class Calculator(QMainWindow):
                             padding: 8px;
                         }
                         QListWidget::item:selected#history_list {
-                            background-color: #444;   /* light gray highlight */
+                            background-color: #444;  
                             color: white;
                         }
                     """)
@@ -720,6 +812,7 @@ class Calculator(QMainWindow):
                                     background-color: #1e1e1e;
                                     color: white;
                                     font-size: 18px;
+                                    font-family: Inter;
                                     border: 2px solid #444;
                                     border-radius: 10px;
                                     padding: 5px;
@@ -728,7 +821,7 @@ class Calculator(QMainWindow):
                                     padding: 8px;
                                 }
                                 QListWidget::item:selected#history_list {
-                                    background-color: #444;   /* light gray highlight */
+                                    background-color: #444;   
                                     color: white;
                                 }
                             """)
@@ -738,6 +831,7 @@ class Calculator(QMainWindow):
                         font-size: 18px;
                         padding: 5px;
                         border: 2px solid #444;
+                        font-family: Inter;
                         border-radius: 8px;
                         background-color: #1e1e1e;
                         color: white;
@@ -745,6 +839,7 @@ class Calculator(QMainWindow):
                     QListWidget::item {
                         padding: 12px;
                         border-radius: 4px;
+                        font-family: Inter;
                         margin: 2px;
                         background-color: #1e1e1e;
                     }
@@ -1097,7 +1192,7 @@ class Calculator(QMainWindow):
             # 1. Handling the nCr operation:
             if 'C' in expression:
                 try:
-                    parts = expression.split(' C ')
+                    parts = expression.split('C')
                     if len(parts) == 2:
                         n = int(float(parts[0]))
                         r = int(float(parts[1]))
@@ -1127,7 +1222,7 @@ class Calculator(QMainWindow):
                         r = int(float(parts[1]))
 
                         if n >= 0 and r >= 0 and n >= r:
-                            result = math.factorial(n) // (math.factorial(r) * math.factorial(n-r))
+                            result = math.factorial(n) // math.factorial(n-r)
                             self.current_history.addItem(f"{original_expression} = {result}")
                             self.current_history.scrollToBottom()
                             self.display.setText(str(result))
@@ -1462,7 +1557,7 @@ class Calculator(QMainWindow):
 
         # Creating the title:
         title = QLabel("Unit Converter")
-        title.setStyleSheet("font-size: 24px;"
+        title.setStyleSheet("font-size: 35px;"
                             "font-weight: bold;"
                             "padding: 10px;")
         title.setAlignment(Qt.AlignCenter)
@@ -1474,12 +1569,14 @@ class Calculator(QMainWindow):
                 QListWidget {
                     font-size: 18px;
                     padding: 5px;
+                    font-family: Inter;
                     border: 2px solid #ccc;
                     border-radius: 8px;
                 }
                 QListWidget::item {
                     padding: 12px;
                     border-radius: 4px;
+                    font-family: Inter;
                     margin: 2px;
                 }
                 QListWidget::item:hover {
@@ -1697,9 +1794,11 @@ class Calculator(QMainWindow):
         back_layout = QHBoxLayout()
         back_button = QPushButton("← Back to Conversions")
         if self.current_theme == 'dark':
-            back_button.setStyleSheet("font-size: 20px;")
+            back_button.setStyleSheet("font-size: 16px;"
+                                      "font-family: Roboto;")
         if self.current_theme == 'light':
-            back_button.setStyleSheet("font-size: 15px;")
+            back_button.setStyleSheet("font-size: 16px;"
+                                      "font-family: Roboto;")
 
         # No parameters needed - uses instance variable approach
         back_button.clicked.connect(self.go_back_to_conversions)
@@ -1710,6 +1809,7 @@ class Calculator(QMainWindow):
         # Creating a title based on the selected conversion type:
         title = QLabel(f"{conversion_type} Conversion")
         title.setStyleSheet("font-size: 22px;"
+                            "font-family: Roboto;"
                             "font-weight: bold;"
                             "padding: 15px;")
         title.setAlignment(Qt.AlignCenter)
@@ -1729,6 +1829,8 @@ class Calculator(QMainWindow):
         from_unit.setObjectName("conversion_combo")
 
         from_label = QLabel("From:")
+        from_label.setStyleSheet("font-size: 16px;"
+                                 "font-family: Roboto;")
         from_label.setFixedWidth(50)
 
         from_layout.addWidget(from_label)
@@ -1746,6 +1848,8 @@ class Calculator(QMainWindow):
         to_unit.setObjectName("conversion_combo")
 
         to_label = QLabel("To:")
+        to_label.setStyleSheet("font-size: 16px;"
+                               "font-family: Roboto;")
         to_label.setFixedWidth(50)
 
         to_layout.addWidget(to_label)
@@ -1756,6 +1860,39 @@ class Calculator(QMainWindow):
 
         # Add the conversion layout to main layout
         layout.addLayout(conversion_layout)
+
+        layout.addSpacing(70)
+
+        # NUMPAD SECTION
+        numpad_widget = QWidget()
+        numpad_layout = QGridLayout()
+        numpad_layout.setSpacing(5)
+
+        # Define numpad buttons
+        numpad_buttons = [
+            ['C', '⌫', '±'],
+            ['7', '8', '9'],
+            ['4', '5', '6'],
+            ['1', '2', '3'],
+            ['.', '0', '00']
+        ]
+
+        self.num_buttons = []
+
+        # Create numpad buttons
+        for row, button_row in enumerate(numpad_buttons):
+            for col, button_text in enumerate(button_row):
+                button = QPushButton(button_text)
+                button.setFixedSize(100, 70)
+                button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+                self.numpad_buttons.append(button)
+                # Connect button clicks using lambda
+                button.clicked.connect(lambda checked, text=button_text: self.handle_numpad_input(text, from_value))
+                numpad_layout.addWidget(button, row, col)
+
+        numpad_widget.setLayout(numpad_layout)
+        layout.addWidget(numpad_widget)
 
         # Store references for this conversion type
         setattr(self, f"{conversion_type.lower().replace(' ', '_')}_from_value", from_value)
@@ -1780,6 +1917,27 @@ class Calculator(QMainWindow):
             self.apply_dark_theme()
         return page
 
+    def handle_numpad_input(self, button_text, target_field):
+        """Handle numpad button clicks"""
+        current_text = target_field.text()
+
+        if button_text == 'C':
+            target_field.clear()
+        elif button_text == '⌫':
+            target_field.setText(current_text[:-1])
+        elif button_text == '±':
+            if current_text and current_text != '0':
+                if current_text.startswith('-'):
+                    target_field.setText(current_text[1:])
+                else:
+                    target_field.setText('-' + current_text)
+        elif button_text == '00':
+            target_field.setText(current_text + '00')
+        else:  # Numbers and decimal point
+            if button_text == '.' and '.' in current_text:
+                return  # Prevent multiple decimal points
+            target_field.setText(current_text + button_text)
+
     def perform_current_conversion(self):
         """Perform conversion using the stored current_conversion_type"""
         if hasattr(self, 'current_conversion_type'):
@@ -1789,8 +1947,6 @@ class Calculator(QMainWindow):
         """Return to the main conversions list"""
         self.page_layout.setCurrentWidget(self.conversions_page)
         self.mode_label.setText("Conversions")
-
-    # Supporting methods remain the same:
 
     def setup_conversion_units(self, conversion_type, from_combo, to_combo):
         """Setup the units for a specific conversion type"""

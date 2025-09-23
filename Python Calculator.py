@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QGridLayout, QPush
 
 # QListWidget helps to display history
 # QSizePolicy helps to scale the widgets in accordance to the window size
-from PyQt5.QtCore import Qt  # For alignment
+from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve # For alignment and animations
 
 
 class Calculator(QMainWindow):
@@ -69,7 +69,7 @@ class Calculator(QMainWindow):
         self.sidebar = QFrame(self)
         self.sidebar.setGeometry(0, 0, 200, self.height())
         self.sidebar.setStyleSheet("background-color: #2c2c2c;"
-                                   "color: white")
+                                   "color: white;")
         self.sidebar.hide() # Sidebar is hidden initially
 
         # Menu options:
@@ -263,10 +263,12 @@ class Calculator(QMainWindow):
                         background: transparent;
                         color: #000;
                         font-size: 16px;
+                        font-family: Roboto;
                         border: none;
                     }
                     QListWidget::item {
                         padding: 12px;
+                        font-family: Roboto;
                         border-radius: 8px;
                     }
                     QListWidget::item:hover {
@@ -290,10 +292,12 @@ class Calculator(QMainWindow):
                 background: transparent;
                 color: #fff;
                 font-size: 16px;
+                font-family: Roboto;
                 border: none;
             }
             QListWidget#menu_list::item {
                 padding: 12px;
+                font-family: Roboto;
                 border-radius: 8px;
             }
             QListWidget#menu_list::item:hover {
@@ -308,11 +312,37 @@ class Calculator(QMainWindow):
         self.menu_button.setStyleSheet("background-color: #2c2c2c; font-size: 25px; border: none; padding: 7px;")
 
     def toggle_sidebar(self):
+        sidebar_width = 200
+        sidebar_height = self.height()
+
         if self.sidebar.isVisible():
-            self.sidebar.hide()
+            # Sidebar is visible → slide it out
+            start_rect = QRect(0, 0, sidebar_width, sidebar_height)
+            end_rect = QRect(-sidebar_width, 0, sidebar_width, sidebar_height)
         else:
-            self.sidebar.setGeometry(0, 0, 200, self.height())  # Resize dynamically
+            # Sidebar is hidden → slide it in
+            start_rect = QRect(-sidebar_width, 0, sidebar_width, sidebar_height)
+            end_rect = QRect(0, 0, sidebar_width, sidebar_height)
+            self.sidebar.setGeometry(start_rect)
             self.sidebar.show()
+
+        # Create animation
+        self.sidebar_anim = QPropertyAnimation(self.sidebar, b"geometry")
+        self.sidebar_anim.setDuration(300)  # ms
+        self.sidebar_anim.setStartValue(start_rect)
+        self.sidebar_anim.setEndValue(end_rect)
+        self.sidebar_anim.setEasingCurve(QEasingCurve.OutCubic)
+
+        # Hide after animation if sliding out
+        if end_rect.x() < 0:
+            self.sidebar_anim.finished.connect(self.sidebar.hide)
+        else:
+            try:
+                self.sidebar_anim.finished.disconnect(self.sidebar.hide)
+            except TypeError:
+                pass
+
+        self.sidebar_anim.start()
 
     # Creating a function to handle sidebar mode selection
     def change_mode(self, item):
@@ -339,6 +369,7 @@ class Calculator(QMainWindow):
         self.sidebar.hide()
         # Hide the sidebar when the user selects desired button
 
+    
     def toggle_theme(self):
         if self.light_mode.isChecked():
             self.apply_light_theme()
@@ -353,6 +384,7 @@ class Calculator(QMainWindow):
                 background-color: #ffffff;
                 color: #000000;
                 font-size: 42px;
+                font-family: SF Mono, monospace;
                 padding: 7px;
                 border: 2px solid #ccc;
                 border-radius: 10px;
@@ -366,15 +398,15 @@ class Calculator(QMainWindow):
             QLineEdit#conversion_input {
                 background-color: white;
                 color: black;
-                font-size: 23px;
-                font-familty: SF Mono;
+                font-size: 20px;
+                font-family: SF Mono;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }
             QLineEdit#conversion_result {
                 background-color: #f5f5f5;
                 color: black;
-                font-size: 23px;
+                font-size: 20px;
                 font-family: SF Mono;
                 border: 2px solid #ccc;
                 border-radius: 8px;
@@ -382,7 +414,7 @@ class Calculator(QMainWindow):
             QComboBox#conversion_combo {
                 background-color: white;
                 color: black;
-                font-size: 23px;
+                font-size: 18px;
                 font-family: Roboto;
                 border: 2px solid #ccc;
                 border-radius: 8px;
@@ -591,6 +623,10 @@ class Calculator(QMainWindow):
                 color: white;
             }""")
 
+            self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto;")
+            self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
+            self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
+
 
 
         self.apply_sidebar_theme_light()
@@ -617,7 +653,7 @@ class Calculator(QMainWindow):
             QLineEdit#conversion_input {
                 background-color: #1e1e1e;
                 color: #ffffff;
-                font-size: 20px;
+                font-size: 23px;
                 font-family: SF Mono;
                 border: 2px solid #444;
                 border-radius: 10px;
@@ -625,7 +661,7 @@ class Calculator(QMainWindow):
             QLineEdit#conversion_result {
                 background-color: #1e1e1e;
                 color: #ffffff;
-                font-size: 20px;
+                font-size: 23px;
                 font-family: SF Mono;
                 border: 2px solid #444;
                 border-radius: 10px;
@@ -633,8 +669,8 @@ class Calculator(QMainWindow):
             QComboBox#conversion_combo {
                 background-color: #1e1e1e;
                 color: white;
-                font-size: 20px;
-                font-family: Roboto;
+                font-size: 18px;
+                font-family: SF Mono, monospaced;
                 border: 2px solid #444;
                 border-radius: 10px;
             }
@@ -649,9 +685,8 @@ class Calculator(QMainWindow):
                             background-color: #5b2d2d;
                             border: 1px solid #7f1d1d;
                             border-radius: 5px;
-                            font-size: 16px;
+                            font-size: 25px;
                             font-family: Inter;
-                            font-weight: bold;
                             color: #fff;
                         }
                         QPushButton:hover { background-color: #7f1d1d; }
@@ -851,6 +886,10 @@ class Calculator(QMainWindow):
                         color: white;
                     }
                 """)
+
+        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #ffffff;")
+        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #ffffff;")
+        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #ffffff;")
 
         self.apply_sidebar_theme_dark()
 
@@ -1190,7 +1229,8 @@ class Calculator(QMainWindow):
             # Keeping the original expression for adding to history
 
             # 1. Handling the nCr operation:
-            if 'C' in expression:
+            if 'C' in expression and not any(func in expression for func in ['cos', 'acos']):
+                # Adding this line because if the user types in 'cos' or 'acos', it contains a 'C' which will create conflicts
                 try:
                     parts = expression.split('C')
                     if len(parts) == 2:
@@ -1214,7 +1254,9 @@ class Calculator(QMainWindow):
                     return
 
             # 2. Handling the nPr operation:
-            if 'P' in expression:
+            if 'P' in expression and not any(func in expression for func in ['exp']):
+                # Adding this line because if the user types in 'exp', it contains a 'P' which will create conflicts
+
                 try:
                     parts = expression.split('P')
                     if len(parts) == 2:
@@ -1259,6 +1301,7 @@ class Calculator(QMainWindow):
                         return
 
             expression = expression.replace('×', '*').replace('÷', '/')
+            expression = expression.replace('e', str(math.e))
 
             result = str(eval(expression))
             # Built-in function to evaluate expressions in python and then typecasting it back to a string
@@ -1558,6 +1601,7 @@ class Calculator(QMainWindow):
         # Creating the title:
         title = QLabel("Unit Converter")
         title.setStyleSheet("font-size: 35px;"
+                            "font-family: Roboto;"
                             "font-weight: bold;"
                             "padding: 10px;")
         title.setAlignment(Qt.AlignCenter)
@@ -1602,7 +1646,10 @@ class Calculator(QMainWindow):
 
         # Add some instructions
         instruction = QLabel("Select a conversion type above to get started")
-        instruction.setStyleSheet("font-size: 16px; color: #666; padding: 15px;")
+        instruction.setStyleSheet("font-size: 16px; "
+                                  "color: #666; "
+                                  "padding: 15px;"
+                                  "font-family: Roboto;")
         instruction.setAlignment(Qt.AlignCenter)
         layout.addWidget(instruction)
 
@@ -1822,10 +1869,12 @@ class Calculator(QMainWindow):
         from_layout = QHBoxLayout()
 
         from_value = QLineEdit()
+        from_value.setFixedHeight(45)
         from_value.setObjectName("conversion_input")
         from_value.setPlaceholderText("Enter value")
 
         from_unit = QComboBox()
+        from_unit.setFixedWidth(125)
         from_unit.setObjectName("conversion_combo")
 
         from_label = QLabel("From:")
@@ -1841,10 +1890,12 @@ class Calculator(QMainWindow):
         # Creating the 'To' part:
         to_layout = QHBoxLayout()
         to_value = QLineEdit()
+        to_value.setFixedHeight(45)
         to_value.setObjectName("conversion_result")
         to_value.setReadOnly(True)  # Result field should be read-only
 
         to_unit = QComboBox()
+        to_unit.setFixedWidth(125)
         to_unit.setObjectName("conversion_combo")
 
         to_label = QLabel("To:")

@@ -1,11 +1,11 @@
 import math
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QGridLayout, QPushButton, QVBoxLayout, QSizePolicy, \
-    QRadioButton, QLabel, QHBoxLayout, QButtonGroup, QListWidget, QMainWindow, QFrame, QStackedWidget, QComboBox
+    QRadioButton, QLabel, QHBoxLayout, QButtonGroup, QListWidget, QMainWindow, QFrame, QStackedWidget, QComboBox, QMenu, QAction
 
 # QListWidget helps to display history
 # QSizePolicy helps to scale the widgets in accordance to the window size
-from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve # For alignment and animations
+from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve  # For alignment and animations
 
 
 class Calculator(QMainWindow):
@@ -35,14 +35,18 @@ class Calculator(QMainWindow):
         # Create the universal display container
         self.display_container = QWidget()
         display_layout = QVBoxLayout()
+        # Remove margins so the display lines up cleanly with other widgets
         display_layout.setContentsMargins(0, 0, 0, 0)
+        display_layout.setSpacing(0)
 
         # Create the actual QLineEdit display
         self.display = QLineEdit()
         self.display.setAlignment(Qt.AlignRight)
-        self.display.setFixedSize(450, 80)
+        # Use a fixed height but allow the width to expand with the window
+        self.display.setFixedHeight(80)
         self.display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.display.setStyleSheet("font-size: 35px; padding: 5px;")
+        # Reduce padding slightly so the display doesn't overhang neighboring widgets
+        self.display.setStyleSheet("font-size: 32px; padding: 8px; margin: 0px;")
 
         display_layout.addWidget(self.display)
         self.display_container.setLayout(display_layout)
@@ -67,10 +71,12 @@ class Calculator(QMainWindow):
 
         # Creating an overlay-type sidebar (like the Windows calculator) to display additional options
         self.sidebar = QFrame(self)
+        # Ensure object name matches stylesheet selectors that target #sidebar
+        self.sidebar.setObjectName('sidebar')
         self.sidebar.setGeometry(0, 0, 200, self.height())
         self.sidebar.setStyleSheet("background-color: #2c2c2c;"
                                    "color: white;")
-        self.sidebar.hide() # Sidebar is hidden initially
+        self.sidebar.hide()  # Sidebar is hidden initially
 
         # Menu options:
         self.menu_list = QListWidget(self.sidebar)
@@ -145,6 +151,8 @@ class Calculator(QMainWindow):
     def initUI(self):
         # Creating the main layout
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(10, 10, 10, 10)  # Add margins to prevent overhang
+        main_layout.setSpacing(5)  # Add consistent spacing
 
         # Creating a new layout at the top that contains the menu button and the menu label
         # (what screen they are currently on)
@@ -158,38 +166,16 @@ class Calculator(QMainWindow):
         self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto;")
         top_bar.addWidget(self.menu_button)
         top_bar.addWidget(self.mode_label)
+
+        self.theme_button = QPushButton("🎨")
+        self.theme_button.setToolTip("Change Theme")
+        self.theme_button.setStyleSheet("font-size: 25px; padding: 2px; background: none;")
+        self.theme_button.clicked.connect(self.show_theme_menu)
+
         top_bar.addStretch()  # Pushes everything to the left side
+        top_bar.addWidget(self.theme_button)
 
-        main_layout.insertLayout(0, top_bar)  # Added the top car to the main layout of the display
-
-
-        # Code to toggle between themes:
-        theme_layout = QHBoxLayout()
-        theme_label = QLabel("Theme:")
-        self.light_mode = QRadioButton("Light mode")
-        self.dark_mode = QRadioButton("Dark mode")
-        self.light_mode.setChecked(True)  # Defaults to light mode
-
-        theme_label.setStyleSheet("font-size: 15px;"
-                                  "font-family: Roboto;")
-        self.light_mode.setStyleSheet("font-size: 15px;"
-                                      "font-family: Roboto;")
-        self.dark_mode.setStyleSheet("font-size: 15px;"
-                                     "font-family: Roboto;")
-
-
-        # Grouping the theme buttons together
-        self.theme_group = QButtonGroup(self)
-        self.theme_group.addButton(self.light_mode)
-        self.theme_group.addButton(self.dark_mode)
-
-        self.light_mode.toggled.connect(self.toggle_theme)
-        self.dark_mode.toggled.connect(self.toggle_theme)
-
-        theme_layout.addWidget(theme_label)
-        theme_layout.addWidget(self.light_mode)
-        theme_layout.addWidget(self.dark_mode)
-        main_layout.addLayout(theme_layout)
+        main_layout.insertLayout(0, top_bar)  # Added the top bar to the main layout of the display
 
         # Adding radio buttons to allow the user to choose between degrees and radians for trigonometric functions:
         angle_mode_layout = QHBoxLayout()
@@ -215,7 +201,6 @@ class Calculator(QMainWindow):
         self.angle_group.addButton(self.deg_mode)
         self.angle_group.addButton(self.rad_mode)
 
-
         self.angle_mode = "deg"
         self.deg_mode.toggled.connect(self.set_angle_mode)
         self.rad_mode.toggled.connect(self.set_angle_mode)
@@ -239,9 +224,9 @@ class Calculator(QMainWindow):
         self.standard_page = self.create_standard_calc()
         self.advanced_page = self.create_adv_calc()
 
-        self.page_layout.addWidget(self.standard_page) # Added Standard page to the stack widget
-        self.page_layout.addWidget(self.advanced_page) # Added Advanced page to the stack widget
-        self.page_layout.setCurrentWidget(self.standard_page) # Defaults to the standard page
+        self.page_layout.addWidget(self.standard_page)  # Added Standard page to the stack widget
+        self.page_layout.addWidget(self.advanced_page)  # Added Advanced page to the stack widget
+        self.page_layout.setCurrentWidget(self.standard_page)  # Defaults to the standard page
         main_layout.addWidget(self.page_layout)
 
         self.conversions_page = self.create_conversions_page()
@@ -251,6 +236,131 @@ class Calculator(QMainWindow):
 
         # Apply light theme by default:
         self.apply_light_theme()
+
+    def show_theme_menu(self):
+        """Show the theme selection menu directly"""
+        theme_menu = QMenu(self)
+
+        # Create theme actions directly
+        light_action = QAction("Light", self)
+        light_action.setCheckable(True)
+        light_action.triggered.connect(lambda: self.change_theme("light"))
+
+        dark_action = QAction("Dark", self)
+        dark_action.setCheckable(True)
+        dark_action.triggered.connect(lambda: self.change_theme("dark"))
+
+        ocean_action = QAction("Ocean", self)
+        ocean_action.setCheckable(True)
+        ocean_action.triggered.connect(lambda: self.change_theme("ocean"))
+
+        forest_action = QAction("Forest", self)
+        forest_action.setCheckable(True)
+        forest_action.triggered.connect(lambda: self.change_theme("forest"))
+
+        sunset_action = QAction("Sunset", self)
+        sunset_action.setCheckable(True)
+        sunset_action.triggered.connect(lambda: self.change_theme("sunset"))
+
+        # Add actions directly to menu
+        theme_menu.addAction(light_action)
+        theme_menu.addAction(dark_action)
+        theme_menu.addAction(ocean_action)
+        theme_menu.addAction(forest_action)
+        theme_menu.addAction(sunset_action)
+
+        # Check the current theme
+        if self.current_theme == "light":
+            light_action.setChecked(True)
+        elif self.current_theme == "dark":
+            dark_action.setChecked(True)
+        elif self.current_theme == "ocean":
+            ocean_action.setChecked(True)
+        elif self.current_theme == "forest":
+            forest_action.setChecked(True)
+        elif self.current_theme == "sunset":
+            sunset_action.setChecked(True)
+
+        # Style the menu based on current theme
+        if self.current_theme == "dark":
+            theme_menu.setStyleSheet("""
+                QMenu {
+                    background-color: #2c2c2c;
+                    color: white;
+                    border: 1px solid #444;
+                    font-family: Roboto;
+                    font-size: 14px;
+                }
+                QMenu::item {
+                    padding: 8px 16px;
+                }
+                QMenu::item:selected {
+                    background-color: #0078d7;
+                }
+                QMenu::item:checked {
+                    background-color: #0078d7;
+                    color: white;
+                }
+            """)
+        else:
+            theme_menu.setStyleSheet("""
+                QMenu {
+                    background-color: white;
+                    color: black;
+                    border: 1px solid #ccc;
+                    font-family: Roboto;
+                    font-size: 14px;
+                }
+                QMenu::item {
+                    padding: 8px 16px;
+                }
+                QMenu::item:selected {
+                    background-color: #e0e0e0;
+                }
+                QMenu::item:checked {
+                    background-color: #0078d7;
+                    color: white;
+                }
+            """)
+
+        # Show menu at button position
+        button_rect = self.theme_button.geometry()
+        menu_pos = self.theme_button.mapToGlobal(self.theme_button.rect().bottomLeft())
+        theme_menu.exec_(menu_pos)
+
+    def change_theme(self, theme_name):
+        """Change the theme based on selection"""
+        self.current_theme = theme_name
+
+        if theme_name == "light":
+            self.apply_light_theme()
+            self.apply_sidebar_theme_light()
+            # Explicitly set mode label for light theme
+            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #000000;")
+
+        elif theme_name == "dark":
+            self.apply_dark_theme()
+            self.apply_sidebar_theme_dark()
+            # Explicitly set mode label for dark theme
+            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #ffffff;")
+
+        elif theme_name == "ocean":
+            self.apply_ocean_theme()
+            self.apply_sidebar_theme_ocean()
+            # Explicitly set mode label for ocean theme
+            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #275569;")
+
+        elif theme_name == "forest":
+            self.apply_forest_theme()
+            self.apply_sidebar_theme_forest()
+            # Explicitly set mode label for forest theme
+            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #2d3a2d;")
+
+        elif theme_name == "sunset":
+            self.apply_sunset_theme()
+            self.apply_sidebar_theme_sunset()
+            # Explicitly set mode label for sunset theme
+            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #5c2e1f;")
 
     # Applying light and dark mode themes to the sidebar:
     def apply_sidebar_theme_light(self):
@@ -281,6 +391,100 @@ class Calculator(QMainWindow):
                 """)
 
         self.menu_button.setStyleSheet("background-color: white; font-size: 25px; border: none; padding: 7px;")
+
+    def apply_sidebar_theme_ocean(self):
+        self.sidebar.setStyleSheet("""
+                            QFrame {
+                                background-color: #74c0fc;
+                                border-right: 1px solid #d0ebff;
+                            }
+                            QListWidget {
+                                background: #d0ebff;
+                                color: #0b3954;
+                                font-size: 16px;
+                                font-family: Roboto;
+                                border: none;
+                            }
+                            QListWidget::item {
+                                padding: 12px;
+                                font-family: Roboto;
+                                border-radius: 8px;
+                            }
+                            QListWidget::item:hover {
+                                background-color: #e0e0e0;
+                            }
+                            QListWidget::item:selected {
+                                background-color: #0078d7;
+                                color: white;
+                            }
+                        """)
+
+        self.menu_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #e0f7fa;
+                    color: #0a3d62; 
+                    border: none;
+                    font-size: 25px;
+                    padding: 7px;
+                }
+
+                QPushButton:hover {
+                    background-color: #74a9cf;
+                }""")
+
+    def apply_sidebar_theme_forest(self):
+        # Forest sidebar (reuse a light-ish sidebar for forest theme)
+        self.sidebar.setStyleSheet("""
+            QFrame {
+                background-color: #f0f0f0;
+                border-right: 1px solid #ccc;
+            }
+            QListWidget {
+                background: transparent;
+                color: #000;
+                font-size: 16px;
+                font-family: Roboto;
+                border: none;
+            }
+            QListWidget::item {
+                padding: 12px;
+                font-family: Roboto;
+                border-radius: 8px;
+            }
+            QListWidget::item:hover {
+                background-color: #e0e0e0;
+            }
+            QListWidget::item:selected {
+                background-color: #0078d7;
+                color: white;
+            }
+        """)
+
+        self.menu_button.setStyleSheet("background-color: white; font-size: 25px; border: none; padding: 7px;")
+
+    def apply_sidebar_theme_sunset(self):
+        self.sidebar.setStyleSheet("""
+            QFrame#sidebar {
+                background-color: #ffe0b2;
+                border-right: 2px solid #f7b267;
+            }
+            QPushButton {
+                background-color: #fdd9a0;
+                color: #5c2e1f;
+                font-size: 18px;
+                font-family: Inter;
+                border-radius: 5px;
+                border: 1px solid #f7b267;
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background-color: #fbb76b;
+            }
+            QPushButton:checked {
+                background-color: #ff7043;
+                color: white;
+            }
+        """)
 
     def apply_sidebar_theme_dark(self):
         self.sidebar.setStyleSheet("""
@@ -355,7 +559,7 @@ class Calculator(QMainWindow):
             # If you only pass self.create_standard_calc, you are only passing the function to the change_mode
             # function, not the page, so it will throw an error
             self.display_container.show()
-            self.display.clear() # Clear the display while switching modes
+            self.display.clear()  # Clear the display while switching modes
 
         elif mode == "Advanced":
             self.page_layout.setCurrentWidget(self.advanced_page)
@@ -369,15 +573,31 @@ class Calculator(QMainWindow):
         self.sidebar.hide()
         # Hide the sidebar when the user selects desired button
 
-    
     def toggle_theme(self):
         if self.light_mode.isChecked():
             self.apply_light_theme()
             self.current_theme = "light"
             self.apply_sidebar_theme_light()
-        else:
+
+        elif self.dark_mode.isChecked():
             self.apply_dark_theme()
             self.current_theme = "dark"
+            self.apply_sidebar_theme_dark()
+
+        elif self.ocean_mode.isChecked():
+            self.apply_ocean_theme()
+            self.current_theme = 'ocean'
+            self.apply_sidebar_theme_ocean()
+
+        elif self.forest_mode.isChecked():
+            self.apply_forest_theme()
+            self.current_theme = 'forest'
+            self.apply_sidebar_theme_forest()
+
+        elif self.sunset_mode.isChecked():
+            self.apply_sunset_theme()
+            self.current_theme = 'sunset'
+            self.apply_sidebar_theme_sunset()
 
     def apply_light_theme(self):
         self.display.setStyleSheet("""QLineEdit {
@@ -386,7 +606,7 @@ class Calculator(QMainWindow):
                 font-size: 42px;
                 font-family: SF Mono, monospace;
                 padding: 7px;
-                border: 2px solid #ccc;
+                border: 2px solid #999;
                 border-radius: 10px;
                 }""")
 
@@ -529,77 +749,62 @@ class Calculator(QMainWindow):
                                 background-color: #c7d2fe;
                                 }
                             """)
-            self.standard_history.setStyleSheet("""
-                QListWidget#standard {
-                    background-color: white;
-                    color: black;
-                    font-size: 18px;
-                    font-family: Inter;
-                    border: 2px solid #ccc;
-                    border-radius: 10px;
-                    padding: 5px;
-                }
-                QListWidget::item#history_list {
-                    padding: 8px;
-                }
-                QListWidget::item:selected#history_list {
-                    background-color: #ddd;   
-                    color: black;
-                }
-            """)
 
-            self.adv_history.setStyleSheet("""
-                            QListWidget#advanced {
-                                background-color: white;
-                                color: black;
-                                font-size: 18px;
-                                font-family: Inter;
-                                border: 2px solid #ccc;
-                                border-radius: 10px;
-                                padding: 5px;
-                            }
-                            QListWidget::item#history_list {
-                                padding: 8px;
-                            }
-                            QListWidget::item:selected#history_list {
-                                background-color: #ddd;   
-                                color: black;
-                            }
-                        """)
+        # Light-theme histories (apply once, not inside the button loop)
+        self.standard_history.setStyleSheet("""
+            QListWidget#standard {
+                background-color: white;
+                color: black;
+                font-size: 18px;
+                font-family: Inter;
+                border: 2px solid #999;
+                border-radius: 10px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+            }
+            QListWidget::item:selected {
+                background-color: #ddd;   
+                color: black;
+            }
+        """)
 
-            for button in self.numpad_buttons:
-                text = button.text()
-                if text in ['C', '⌫']:
-                    button.setStyleSheet("""
-                                        QPushButton {
-                                            background-color: #f8d7da; 
-                                            color: #842029;
-                                            font-size: 25px;
-                                            font-family: Inter;
-                                            border-radius: 8px;
-                                            border: 1px solid #f5c2c7;
-                                        }
-                                        QPushButton:hover {
-                                            background-color: #f5c2c7;
-                                        }
-                                                """)
-                else:
-                    button.setStyleSheet("""
-                                        QPushButton {
-                                            color: #212529;
-                                            background-color: #e9ecef;
-                                            border: 1px solid #dee2e6;
-                                            border-radius: 5px;
-                                            font-size: 25px;
-                                            font-family: Inter;
-                                            color: #333;
-                                        }
-                                        QPushButton:hover {
-                                            background-color: #dee2e6; 
-                                         }
-                                                """)
+        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
 
-            self.conversion_list.setStyleSheet("""
+        for button in self.numpad_buttons:
+            text = button.text()
+            if text in ['C', '⌫']:
+                button.setStyleSheet("""
+                                    QPushButton {
+                                        background-color: #f8d7da; 
+                                        color: #842029;
+                                        font-size: 25px;
+                                        font-family: Inter;
+                                        border-radius: 8px;
+                                        border: 1px solid #f5c2c7;
+                                    }
+                                    QPushButton:hover {
+                                        background-color: #f5c2c7;
+                                    }
+                                            """)
+            else:
+                button.setStyleSheet("""
+                                    QPushButton {
+                                        color: #212529;
+                                        background-color: #e9ecef;
+                                        border: 1px solid #dee2e6;
+                                        border-radius: 5px;
+                                        font-size: 25px;
+                                        font-family: Inter;
+                                        color: #333;
+                                    }
+                                    QPushButton:hover {
+                                        background-color: #dee2e6; 
+                                     }
+                                            """)
+
+        self.conversion_list.setStyleSheet("""
             QListWidget{
                 font-size: 18px;
                 padding: 5px;
@@ -623,15 +828,814 @@ class Calculator(QMainWindow):
                 color: white;
             }""")
 
-            self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto;")
-            self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
-            self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
-
-
+        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto;")
+        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
+        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
 
         self.apply_sidebar_theme_light()
         # Here, if we call the same function (apply_light_theme), Python will throw a RecursionError
         # as the function is being called infinite number of times
+
+    def apply_ocean_theme(self):
+        # Display
+        self.display.setStyleSheet("""
+            QLineEdit {
+                background-color: #e0f7fa;
+                color: #275569;
+                font-size: 42px;
+                font-family: SF Mono, monospace;
+                padding: 7px;
+                border: 2px solid #0277bd;
+                border-radius: 10px;
+            }
+        """)
+
+        # Base widget + conversion inputs
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #e0f7fa;
+                color: #275569;
+            }
+            QLineEdit#conversion_input, QLineEdit#conversion_result {
+                background-color: #f1fbff;
+                color: #0a3d62;
+                font-size: 20px;
+                font-family: SF Mono;
+                border: 2px solid #74a9cf;
+                border-radius: 8px;
+            }
+            QComboBox#conversion_combo {
+                    background-color: #b8eaff;
+                    color: #133c55;
+                    font-size: 18px;
+                    font-family: Roboto;
+                    border: 2px solid #74a9cf;
+                    border-radius: 8px;
+                }
+            """)
+
+        # Theme button - Style it BEFORE calling sidebar theme
+        self.theme_button.setStyleSheet("""
+            QPushButton {
+                background: none;
+                font-size: 25px;
+                border: none;
+                padding: 2px;
+                color: #275569;
+            }
+            QPushButton:hover {
+                background-color: #b8eaff;
+                border-radius: 4px;
+            }
+        """)
+
+        # Menu button - Style it BEFORE calling sidebar theme  
+        self.menu_button.setStyleSheet("""
+            QPushButton {
+                background-color: #e0f7fa;
+                color: #0a3d62; 
+                border: none;
+                font-size: 25px;
+                padding: 7px;
+            }
+            QPushButton:hover {
+                background-color: #74a9cf;
+            }
+        """)
+
+        # Mode label
+        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #275569;")
+
+            # Buttons
+        for button in self.standard_buttons + self.advanced_buttons:
+                text = button.text()
+                if text in ['+', '-', '×', '÷', '1/x', '%']:
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #bcd4e6;  
+                            color: #133c55;
+                            font-size: 25px;
+                            font-family: Inter;
+                            border-radius: 5px;
+                            border: 1px solid #74a9cf;
+                        }
+                        QPushButton:hover {
+                            background-color: #74a9cf;
+                            color: white;
+                        }
+                    """)
+                elif text in ['C', '⌫']:
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #ffb3b3; 
+                            color: #7f1d1d;
+                            font-size: 25px;
+                            font-family: Inter;
+                            border-radius: 8px;
+                            border: 1px solid #ff6b6b;
+                        }
+                        QPushButton:hover {
+                            background-color: #ff6b6b;
+                        }
+                    """)
+                elif text == '=':
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #99e2b4; 
+                            color: #1b4332;
+                            font-size: 25px;
+                            font-family: Inter;
+                            border-radius: 5px;
+                            border: 1px solid #52b788;
+                        }
+                        QPushButton:hover {
+                            background-color: #52b788;
+                            color: white;
+                        }
+                    """)
+                elif text in ['n!', 'mod', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan',
+                            'log', 'ln', 'π', 'e', 'x²', 'x³', '√x', '³√x', '10^x', 'exp',
+                            'xʸ', 'nCr', 'nPr', '(', ')']:
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #dbd9fc;  
+                            color: #343161;
+                            font-size: 22px;
+                            font-family: Inter;
+                            border-radius: 8px;
+                        }
+                        QPushButton:hover {
+                            background-color: #bab6fa;
+                        }
+                    """)
+                else:
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #f1fbff;  
+                            color: #0a3d62;
+                            font-size: 25px;
+                            font-family: Inter;
+                            border-radius: 5px;
+                            border: 1px solid #cce9f9;
+                        }
+                        QPushButton:hover {
+                            background-color: #cce9f9;
+                        }
+                    """)
+
+            # Extra buttons
+        for button in self.extra_btn_objs:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #e0e7ff;  
+                        color: #1e3a8a;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #cbd5e1;
+                    }
+                    QPushButton:hover {
+                        background-color: #c7d2fe;
+                    }
+                """)
+
+            # More functions button
+        self.more_functions_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #ffebd6; 
+                    color: #cc6600;
+                    font-size: 20px;
+                    font-family: Inter;
+                    border-radius: 5px;
+                    border: 1px solid #cbd5e1;
+                }
+                QPushButton:hover {
+                    background-color: #ffd9b3;
+                }
+                QPushButton:checked {
+                    background-color: #ffd9b3;
+                    border: 2px solid #cbd5e1;
+                }
+            """)
+
+            # Numpad buttons
+        for button in self.numpad_buttons:
+            text = button.text()
+            if text in ['C', '⌫']:
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #ffb3b3; 
+                            color: #7f1d1d;
+                            font-size: 25px;
+                            font-family: Inter;
+                            border-radius: 8px;
+                            border: 1px solid #ff6b6b;
+                        }
+                        QPushButton:hover {
+                            background-color: #ff6b6b;
+                        }
+                    """)
+            else:
+                    button.setStyleSheet("""
+                        QPushButton {
+                            background-color: #f1fbff;  
+                            color: #0a3d62;
+                            font-size: 25px;
+                            font-family: Inter;
+                            border-radius: 5px;
+                            border: 1px solid #cce9f9;
+                        }
+                        QPushButton:hover {
+                            background-color: #cce9f9;
+                        }
+                    """)
+
+            # Histories
+            self.standard_history.setStyleSheet("""
+                QListWidget#standard {
+                    background-color: #e0f7fa;
+                    color: #0a3d62;
+                    font-size: 18px;
+                    font-family: Inter;
+                    border: 2px solid #0277bd;
+                    border-radius: 10px;
+                    padding: 5px;
+                }
+                QListWidget::item {
+                    padding: 8px;
+                }
+                QListWidget::item:selected {
+                    background-color: #74a9cf;   
+                    color: white;
+                }
+            """)
+            self.standard_history.setStyleSheet(self.standard_history.styleSheet())
+
+            self.conversion_list.setStyleSheet("""
+                QListWidget {
+                    font-size: 18px;
+                    font-family: Inter;
+                    background-color: #f1fbff;
+                    color: #0a3d62;
+                    border: 2px solid #74a9cf;
+                    border-radius: 8px;
+                    padding: 5px;
+                }
+                QListWidget::item {
+                    padding: 12px;
+                    margin: 2px;
+                    border-radius: 4px;
+                }
+                QListWidget::item:hover {
+                    background-color: #e3f2fd;
+                }
+                QListWidget::item:selected {
+                    background-color: #2196f3;
+                    color: white;
+                }
+            """)
+
+            # Angle labels
+            self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #275569;")
+            self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #275569;")
+            self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #275569;")
+
+    # Apply sidebar theme LAST to avoid overwriting the button styles
+        self.apply_sidebar_theme_ocean()
+
+    def apply_forest_theme(self):
+        # Display
+        self.display.setStyleSheet("""
+            QLineEdit {
+                background-color: #f3f7f2;
+                color: #2d3a2d;
+                font-size: 42px;
+                font-family: SF Mono, monospace;
+                padding: 7px;
+                border: 2px solid #a3c9a8;
+                border-radius: 10px;
+            }
+        """)
+
+        # Base widget + conversion inputs
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f3f7f2;
+                color: #2d3a2d;
+            }
+            QLineEdit#conversion_input, QLineEdit#conversion_result {
+                background-color: #f9fdf7;
+                color: #2f4430;
+                font-size: 20px;
+                font-family: SF Mono;
+                border: 2px solid #9cbf9c;
+                border-radius: 8px;
+            }
+            QComboBox#conversion_combo {
+                background-color: #dbead1;
+                color: #2f4430;
+                font-size: 18px;
+                font-family: Roboto;
+                border: 2px solid #9cbf9c;
+                border-radius: 8px;
+            }
+        """)
+
+        # Buttons
+        for button in self.standard_buttons + self.advanced_buttons:
+            text = button.text()
+            if text in ['+', '-', '×', '÷', '1/x', '%']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #cddfbf;  
+                        color: #2a3d1f;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #7ba05b;
+                    }
+                    QPushButton:hover {
+                        background-color: #b6d1a6;
+                        color: white;
+                    }
+                """)
+            elif text in ['C', '⌫']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #f2d6c1;  
+                        color: #5c2c0c;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 8px;
+                        border: 1px solid #d4a373;
+                    }
+                    QPushButton:hover {
+                        background-color: #eac2a3;
+                    }
+                """)
+            elif text == '=':
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #8fbc8f;  
+                        color: #ffffff;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #5f8d5f;
+                    }
+                    QPushButton:hover {
+                        background-color: #769f76;
+                        color: white;
+                    }
+                """)
+            elif text in ['n!', 'mod', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan',
+                        'log', 'ln', 'π', 'e', 'x²', 'x³', '√x', '³√x', '10^x', 'exp',
+                        'xʸ', 'nCr', 'nPr', '(', ')']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #e9dccd;  
+                        color: #4a3728;
+                        font-size: 22px;
+                        font-family: Inter;
+                        border-radius: 8px;
+                        border: 1px solid #c8ad7f;
+                    }
+                    QPushButton:hover {
+                        background-color: #dbc9b4;
+                    }
+                """)
+            else:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #dcefe2;  
+                        color: #2e4733;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #a3c9a8;
+                    }
+                    QPushButton:hover {
+                        background-color: #cde6d4;
+                    }
+                """)
+
+        # Extra buttons
+        for button in self.extra_btn_objs:
+            button.setStyleSheet("""
+                QPushButton {
+                    background-color: #e6b980;  
+                    color: #4a2c0a;
+                    font-size: 25px;
+                    font-family: Inter;
+                    border-radius: 5px;
+                    border: 1px solid #d1904f;
+                }
+                QPushButton:hover {
+                    background-color: #d9a868;
+                }
+            """)
+
+        # More functions button
+        self.more_functions_button.setStyleSheet("""
+            QPushButton {
+                background-color: #e6b980; 
+                color: #4a2c0a;
+                font-size: 20px;
+                font-family: Inter;
+                border-radius: 5px;
+                border: 1px solid #d1904f;
+            }
+            QPushButton:hover {
+                background-color: #d9a868;
+            }
+            QPushButton:checked {
+                background-color: #d9a868;
+                border: 2px solid #c89f7a;
+            }
+        """)
+
+        # Numpad buttons
+        for button in self.numpad_buttons:
+            text = button.text()
+            if text in ['C', '⌫']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #f2d6c1;  
+                        color: #5c2c0c;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 8px;
+                        border: 1px solid #d4a373;
+                    }
+                    QPushButton:hover {
+                        background-color: #eac2a3;
+                    }
+                """)
+            else:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #dcefe2;  
+                        color: #2e4733;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #a3c9a8;
+                    }
+                    QPushButton:hover {
+                        background-color: #cde6d4;
+                    }
+                """)
+
+        # Histories
+        self.standard_history.setStyleSheet("""
+            QListWidget#standard {
+                background-color: #f9fdf7;
+                color: #2f4430;
+                font-size: 18px;
+                font-family: Inter;
+                border: 2px solid #9cbf9c;
+                border-radius: 10px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+            }
+            QListWidget::item:selected {
+                background-color: #9cbf9c;   
+                color: white;
+            }
+        """)
+        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
+
+        self.conversion_list.setStyleSheet("""
+            QListWidget {
+                font-size: 18px;
+                font-family: Inter;
+                background-color: #f9fdf7;
+                color: #2f4430;
+                border: 2px solid #9cbf9c;
+                border-radius: 8px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 12px;
+                margin: 2px;
+                border-radius: 4px;
+            }
+            QListWidget::item:hover {
+                background-color: #e0f0e0;
+            }
+            QListWidget::item:selected {
+                background-color: #5f8d5f;
+                color: white;
+            }
+        """)
+
+        # Angle labels
+        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #3a5a40;")
+        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #3a5a40;")
+        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #3a5a40;")
+
+        # Theme button
+        self.theme_button.setStyleSheet("""
+            QPushButton {
+                background: none;
+                font-size: 25px;
+                border: none;
+                padding: 2px;
+                color: #2d3a2d;
+            }
+            QPushButton:hover {
+                background-color: #dbead1;
+                border-radius: 4px;
+            }
+        """)
+
+        # Menu button  
+        self.menu_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f3f7f2;
+                color: #2d3a2d; 
+                border: none;
+                font-size: 25px;
+                padding: 7px;
+            }
+            QPushButton:hover {
+                background-color: #a3c9a8;
+            }
+        """)
+
+        # Mode label
+        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #2d3a2d;")
+
+        self.apply_sidebar_theme_forest()
+
+    def apply_sunset_theme(self):
+        # Display
+        self.display.setStyleSheet("""
+            QLineEdit {
+                background-color: #fff4e6;
+                color: #5c2e1f;
+                font-size: 42px;
+                font-family: SF Mono, monospace;
+                padding: 7px;
+                border: 2px solid #f7c59f;
+                border-radius: 10px;
+            }
+        """)
+
+        # Base widget + conversion inputs
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #fff4e6;
+                color: #5c2e1f;
+            }
+            QLineEdit#conversion_input, QLineEdit#conversion_result {
+                background-color: #fff9f4;
+                color: #4a1f1f;
+                font-size: 20px;
+                font-family: SF Mono;
+                border: 2px solid #f7c59f;
+                border-radius: 8px;
+            }
+            QComboBox#conversion_combo {
+                background-color: #ffe0b2;
+                color: #4a1f1f;
+                font-size: 18px;
+                font-family: Roboto;
+                border: 2px solid #f7c59f;
+                border-radius: 8px;
+            }
+        """)
+
+        # Buttons
+        for button in self.standard_buttons + self.advanced_buttons:
+            text = button.text()
+            if text in ['+', '-', '×', '÷', '1/x', '%']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffccbc;  
+                        color: #5c2e1f;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #ff8a65;
+                    }
+                    QPushButton:hover {
+                        background-color: #ffab91;
+                        color: white;
+                    }
+                """)
+            elif text in ['C', '⌫']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #fcefe6; 
+                        color: #6d2f1a;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 8px;
+                        border: 1px solid #e0b7a0;
+                    }
+                    QPushButton:hover {
+                        background-color: #f7d9c4;
+                    }
+                """)
+            elif text == '=':
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ff7043; 
+                        color: #ffffff;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #d84315;
+                    }
+                    QPushButton:hover {
+                        background-color: #e64a19;
+                        color: white;
+                    }
+                """)
+            elif text in ['n!', 'mod', 'sin', 'asin', 'cos', 'acos', 'tan', 'atan',
+                        'log', 'ln', 'π', 'e', 'x²', 'x³', '√x', '³√x', '10^x', 'exp',
+                        'xʸ', 'nCr', 'nPr', '(', ')']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffd180;
+                        color: #4a2500;
+                        font-size: 22px;
+                        font-family: Inter;
+                        border-radius: 8px;
+                        border: 1px solid #ffab40;
+                    }
+                    QPushButton:hover {
+                        background-color: #ffb74d;
+                    }
+                """)
+            else:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffe0b2;  
+                        color: #5c2e1f;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #f7c59f;
+                    }
+                    QPushButton:hover {
+                        background-color: #ffcc80;
+                    }
+                """)
+
+        # Extra buttons
+        for button in self.extra_btn_objs:
+            button.setStyleSheet("""
+                QPushButton {
+                    background-color: #fdd9a0;  
+                    color: #5c2e1f;
+                    font-size: 25px;
+                    font-family: Inter;
+                    border-radius: 5px;
+                    border: 1px solid #f7b267;
+                }
+                QPushButton:hover {
+                    background-color: #fbb76b;
+                }
+            """)
+
+        # More functions button
+        self.more_functions_button.setStyleSheet("""
+            QPushButton {
+                background-color: #fdd9a0; 
+                color: #5c2e1f;
+                font-size: 20px;
+                font-family: Inter;
+                border-radius: 5px;
+                border: 1px solid #f7b267;
+            }
+            QPushButton:hover {
+                background-color: #fbb76b;
+            }
+            QPushButton:checked {
+                background-color: #ffab91;
+                border: 2px solid #f7c59f;
+            }
+        """)
+
+        # Numpad buttons
+        for button in self.numpad_buttons:
+            text = button.text()
+            if text in ['C', '⌫']:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #fcefe6; 
+                        color: #6d2f1a;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 8px;
+                        border: 1px solid #e0b7a0;
+                    }
+                    QPushButton:hover {
+                        background-color: #f7d9c4;
+                    }
+                """)
+            else:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffe0b2;  
+                        color: #5c2e1f;
+                        font-size: 25px;
+                        font-family: Inter;
+                        border-radius: 5px;
+                        border: 1px solid #f7c59f;
+                    }
+                    QPushButton:hover {
+                        background-color: #ffcc80;
+                    }
+                """)
+
+        # Histories
+        self.standard_history.setStyleSheet("""
+            QListWidget#standard {
+                background-color: #fff9f4;
+                color: #4a1f1f;
+                font-size: 18px;
+                font-family: Inter;
+                border: 2px solid #f7c59f;
+                border-radius: 10px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+            }
+            QListWidget::item:selected {
+                background-color: #ffcc80;   
+                color: white;
+            }
+        """)
+        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
+
+        self.conversion_list.setStyleSheet("""
+            QListWidget {
+                font-size: 18px;
+                font-family: Inter;
+                background-color: #fff9f4;
+                color: #4a1f1f;
+                border: 2px solid #f7c59f;
+                border-radius: 8px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 12px;
+                margin: 2px;
+                border-radius: 4px;
+            }
+            QListWidget::item:hover {
+                background-color: #ffe0b2;
+            }
+            QListWidget::item:selected {
+                background-color: #ff7043;
+                color: white;
+            }
+        """)
+
+        # Angle labels
+        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #d84315;")
+        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #d84315;")
+        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #d84315;")
+
+        # Theme button
+        self.theme_button.setStyleSheet("""
+            QPushButton {
+                background: none;
+                font-size: 25px;
+                border: none;
+                padding: 2px;
+                color: #5c2e1f;
+            }
+            QPushButton:hover {
+                background-color: #ffe0b2;
+                border-radius: 4px;
+            }
+        """)
+
+        # Menu button  
+        self.menu_button.setStyleSheet("""
+            QPushButton {
+                background-color: #fff4e6;
+                color: #5c2e1f; 
+                border: none;
+                font-size: 25px;
+                padding: 7px;
+            }
+            QPushButton:hover {
+                background-color: #f7c59f;
+            }
+        """)
+
+        # Mode label
+        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #5c2e1f;")
+
+        self.apply_sidebar_theme_sunset()
 
     def apply_dark_theme(self):
         self.display.setStyleSheet("""QLineEdit {
@@ -639,8 +1643,8 @@ class Calculator(QMainWindow):
                 color: #ffffff;
                 font-size: 42px;
                 font-family: SF Mono;
-                padding: 10px;
-                border: 2px solid #444;
+                padding: 7px;
+                border: 2px solid #666666;
                 border-radius: 10px;
             }""")
 
@@ -649,7 +1653,7 @@ class Calculator(QMainWindow):
                 background-color: #2b2b2b;
                 color: #ffffff;
             }
-            
+
             QLineEdit#conversion_input {
                 background-color: #1e1e1e;
                 color: #ffffff;
@@ -812,31 +1816,22 @@ class Calculator(QMainWindow):
                         background-color: #4b5563;
                     }
                             """)
-        self.display.setStyleSheet("""
-        QLineEdit {
-            background-color: #1e1e1e;
-            color: white;
-            font-size: 50px;
-            font-family: SF Mono;
-            padding: 10px;
-            border: 2px #444;
-            border-radius: 10px
-        }""")
+
 
         self.standard_history.setStyleSheet("""
                         QListWidget#standard {
-                            background-color: #1e1e1e;
+                            background-color: #2b2b2b;
                             color: white;
                             font-size: 18px;
                             font-family: Inter;
-                            border: 2px solid #444;
+                            border: 2px solid #666;
                             border-radius: 10px;
                             padding: 5px;
                         }
-                        QListWidget::item#history_list {
+                        QListWidget::item {
                             padding: 8px;
                         }
-                        QListWidget::item:selected#history_list {
+                        QListWidget::item:selected {
                             background-color: #444;  
                             color: white;
                         }
@@ -844,22 +1839,23 @@ class Calculator(QMainWindow):
 
         self.adv_history.setStyleSheet("""
                                 QListWidget#advanced {
-                                    background-color: #1e1e1e;
+                                    background-color: #2b2b2b;
                                     color: white;
                                     font-size: 18px;
                                     font-family: Inter;
-                                    border: 2px solid #444;
+                                    border: 2px solid #666;
                                     border-radius: 10px;
                                     padding: 5px;
                                 }
-                                QListWidget::item#history_list {
+                                QListWidget::item {
                                     padding: 8px;
                                 }
-                                QListWidget::item:selected#history_list {
+                                QListWidget::item:selected {
                                     background-color: #444;   
                                     color: white;
                                 }
                             """)
+        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
 
         self.conversion_list.setStyleSheet("""
                     QListWidget {
@@ -896,8 +1892,6 @@ class Calculator(QMainWindow):
     def create_standard_calc(self):
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(self.display_container)
-        # Adding the universal display to the layout of the standard mode layout
 
         # --- History ---
         self.standard_history.itemDoubleClicked.connect(self.use_history_items)
@@ -985,7 +1979,6 @@ class Calculator(QMainWindow):
 
         layout.addLayout(grid)
 
-
         widget.setLayout(layout)
         return widget
 
@@ -998,7 +1991,7 @@ class Calculator(QMainWindow):
         top_bar.addStretch()  # Pushes everything to the left side
 
         # Doing the same thing as in the create_standard_calc (re-using the universal display)
-        layout.addWidget(self.display_container)
+        # display container is managed by the main layout; don't add it here
 
         self.adv_history.itemDoubleClicked.connect(self.use_history_items)
         layout.addWidget(self.adv_history)
@@ -1068,8 +2061,7 @@ class Calculator(QMainWindow):
         elif mode == "advanced":
             self.current_history = self.adv_history
         elif mode == "conversions":
-            self.current_history = None # Conversions page doesn't need history
-
+            self.current_history = None  # Conversions page doesn't need history
 
     def action_on_click(self):
         button = self.sender()
@@ -1238,7 +2230,7 @@ class Calculator(QMainWindow):
                         r = int(float(parts[1]))
 
                         if n >= 0 and r >= 0 and n >= r:
-                            result = math.factorial(n) // (math.factorial(r) * math.factorial(n-r))
+                            result = math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
                             self.current_history.addItem(f"{original_expression} = {result}")
                             self.current_history.scrollToBottom()
                             self.display.setText(str(result))
@@ -1264,7 +2256,7 @@ class Calculator(QMainWindow):
                         r = int(float(parts[1]))
 
                         if n >= 0 and r >= 0 and n >= r:
-                            result = math.factorial(n) // math.factorial(n-r)
+                            result = math.factorial(n) // math.factorial(n - r)
                             self.current_history.addItem(f"{original_expression} = {result}")
                             self.current_history.scrollToBottom()
                             self.display.setText(str(result))
@@ -1317,6 +2309,7 @@ class Calculator(QMainWindow):
 
         except:
             self.display.setText('Error')
+
     # Adding functions to clear the display every time a calculation has been performed and the user types in a new
     # expression
     def calculate_result(self):
@@ -1334,7 +2327,6 @@ class Calculator(QMainWindow):
             self.display.clear()
             self.just_calculated = False
         self.display.insert(digit)
-
 
     def toggle_extra_functions(self):
         if self.more_functions_button.isChecked():  # ✅ button pressed
@@ -1609,7 +2601,82 @@ class Calculator(QMainWindow):
 
         # Creating the conversion types list:
         self.conversion_list = QListWidget()
-        self.conversion_list.setStyleSheet("""
+
+        # Theme-specific styles
+        if self.current_theme == "ocean":
+            self.conversion_list.setStyleSheet("""
+                QListWidget {
+                    font-size: 18px;
+                    font-family: Inter;
+                    background-color: #f1fbff;
+                    color: #0a3d62;
+                    border: 2px solid #74a9cf;
+                    border-radius: 8px;
+                    padding: 5px;
+                }
+                QListWidget::item {
+                    padding: 12px;
+                    margin: 2px;
+                    border-radius: 4px;
+                }
+                QListWidget::item:hover {
+                    background-color: #e3f2fd;
+                }
+                QListWidget::item:selected {
+                    background-color: #2196f3;
+                    color: white;
+                }
+            """)
+        elif self.current_theme == "forest":
+            self.conversion_list.setStyleSheet("""
+                QListWidget {
+                    font-size: 18px;
+                    font-family: Inter;
+                    background-color: #e9f5e9;
+                    color: #2e4d2c;
+                    border: 2px solid #a9c9a9;
+                    border-radius: 8px;
+                    padding: 5px;
+                }
+                QListWidget::item {
+                    padding: 12px;
+                    margin: 2px;
+                    border-radius: 4px;
+                }
+                QListWidget::item:hover {
+                    background-color: #cde3cd;
+                }
+                QListWidget::item:selected {
+                    background-color: #4d7c4d;
+                    color: white;
+                }
+            """)
+        elif self.current_theme == "sunset":
+            self.conversion_list.setStyleSheet("""
+                QListWidget {
+                    font-size: 18px;
+                    font-family: Inter;
+                    background-color: #fff3e0;
+                    color: #5c2e1f;
+                    border: 2px solid #f7c59f;
+                    border-radius: 8px;
+                    padding: 5px;
+                }
+                QListWidget::item {
+                    padding: 12px;
+                    margin: 2px;
+                    border-radius: 4px;
+                }
+                QListWidget::item:hover {
+                    background-color: #ffe0b2;
+                }
+                QListWidget::item:selected {
+                    background-color: #ff7043;
+                    color: white;
+                }
+            """)
+        else:  # fallback default
+            self.conversion_list.setStyleSheet("""
                 QListWidget {
                     font-size: 18px;
                     padding: 5px;
@@ -1633,13 +2700,11 @@ class Calculator(QMainWindow):
             """)
 
         # Adding conversion categories to the list:
-        conversion_types = ["Length", "Weight and Mass", "Volume", "Temperature", "Energy", "Area", "Speed", "Time",
-                            "Power", "Data", "Pressure", "Angle"]
+        conversion_types = ["Length", "Weight and Mass", "Volume", "Temperature", "Energy",
+                            "Area", "Speed", "Time", "Power", "Data", "Pressure", "Angle"]
 
         self.conversion_list.addItems(conversion_types)
-        # Fixed: using itemClicked instead of clicked
         self.conversion_list.itemClicked.connect(self.open_conversion_calculator)
-
         self.conversion_list.setFixedHeight(350)
 
         layout.addWidget(self.conversion_list)
@@ -1831,6 +2896,8 @@ class Calculator(QMainWindow):
         # Switch to this conversion page
         self.page_layout.setCurrentWidget(getattr(self, page_name))
         self.mode_label.setText(f"Conversions - {conversion_type}")
+        # Re-apply the current theme to ensure newly shown conversion page widgets get styled
+        self.change_theme(self.current_theme)
 
     def create_specific_conversion_page(self, conversion_type):
         """Create a specific conversion calculator page"""
@@ -1962,10 +3029,8 @@ class Calculator(QMainWindow):
         layout.addStretch()
         page.setLayout(layout)
 
-        if self.current_theme == 'light':
-            self.apply_light_theme()
-        else:
-            self.apply_dark_theme()
+        # Apply the currently selected theme so conversion widgets get the correct styles
+        self.change_theme(self.current_theme)
         return page
 
     def handle_numpad_input(self, button_text, target_field):
@@ -2080,11 +3145,13 @@ class Calculator(QMainWindow):
         else:  # Celsius
             return celsius
 
+
 def main():
     app = QApplication(sys.argv)
     window = Calculator()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()

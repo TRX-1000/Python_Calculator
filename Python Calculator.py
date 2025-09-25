@@ -180,43 +180,30 @@ class Calculator(QMainWindow):
         # Adding radio buttons to allow the user to choose between degrees and radians for trigonometric functions:
         angle_mode_layout = QHBoxLayout()
         self.angle_label = QLabel("Angle mode:")
-        self.deg_mode = QRadioButton("Degrees")
-        self.rad_mode = QRadioButton("Radians")
-        self.deg_mode.setChecked(True)  # Default mode is degrees
+        self.angle_label.setStyleSheet("font-size: 18px; font-family: Roboto;")
 
-        self.angle_label.setStyleSheet("""
-        font-size: 18px;
-        font-family: Roboto;""")
-
-        self.deg_mode.setStyleSheet("""
-                font-size: 18px;
-                font-family: Roboto;""")
-
-        self.rad_mode.setStyleSheet("""
-                font-size: 18px;
-                font-family: Roboto;""")
-
-        # Grouping all the angle buttons in one group
-        self.angle_group = QButtonGroup(self)
-        self.angle_group.addButton(self.deg_mode)
-        self.angle_group.addButton(self.rad_mode)
-
-        self.angle_mode = "deg"
-        self.deg_mode.toggled.connect(self.set_angle_mode)
-        self.rad_mode.toggled.connect(self.set_angle_mode)
-
+        self.angle_mode_combo = QComboBox()
+        self.angle_mode_combo.setObjectName("angle_mode_combo")
+        self.angle_mode_combo.addItems(["Degrees", "Radians"])
+        self.angle_mode_combo.setCurrentText("Degrees")  # Default to degrees
+        self.angle_mode_combo.setFixedWidth(120)
+        
+        self.angle_mode = "deg"  # Default
+        self.angle_mode_combo.currentTextChanged.connect(self.set_angle_mode_from_dropdown)
+        
         angle_mode_layout.addWidget(self.angle_label)
-        angle_mode_layout.addWidget(self.deg_mode)
-        angle_mode_layout.addWidget(self.rad_mode)
+        angle_mode_layout.addWidget(self.angle_mode_combo)
+        angle_mode_layout.addStretch()  # Push to left
+        
         main_layout.addLayout(angle_mode_layout)
+        
+        # Initially hide the angle mode dropdown (instead of radio buttons)
+        self.angle_label.hide()
+        self.angle_mode_combo.hide()
 
         main_layout.addWidget(self.display_container)
         # Now this display shows up
 
-        # Making sure that the angle buttons show up only after clicking the "More Functions" button
-        self.angle_label.hide()
-        self.rad_mode.hide()
-        self.deg_mode.hide()
 
         # Creating a page container so that when the user clicks a button in the sidebar,
         # the page changes (page container contains all the pages so that switching is easy)
@@ -236,6 +223,13 @@ class Calculator(QMainWindow):
 
         # Apply light theme by default:
         self.apply_light_theme()
+
+    def set_angle_mode_from_dropdown(self):
+        selected = self.angle_mode_combo.currentText()
+        if selected == "Degrees":
+            self.angle_mode = "deg"
+        else:
+            self.angle_mode = "rad"
 
     def show_theme_menu(self):
         """Show the theme selection menu directly"""
@@ -770,7 +764,27 @@ class Calculator(QMainWindow):
             }
         """)
 
-        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
+        self.adv_history.setStyleSheet("""
+            QListWidget#advanced {
+                background-color: white;
+                color: black;
+                font-size: 18px;
+                font-family: Inter;
+                border: 2px solid #999;
+                border-radius: 10px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+            }
+            QListWidget::item:selected {
+                background-color: #ddd;   
+                color: black;
+            }
+        """)
+
+        self.adv_history.setStyleSheet(self.adv_history.styleSheet())
+        self.standard_history.setStyleSheet(self.standard_history.styleSheet())
 
         for button in self.numpad_buttons:
             text = button.text()
@@ -828,9 +842,6 @@ class Calculator(QMainWindow):
                 color: white;
             }""")
 
-        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto;")
-        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
-        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto;")
 
         self.apply_sidebar_theme_light()
         # Here, if we call the same function (apply_light_theme), Python will throw a RecursionError
@@ -1053,11 +1064,11 @@ class Calculator(QMainWindow):
             # Histories
             self.standard_history.setStyleSheet("""
                 QListWidget#standard {
-                    background-color: #e0f7fa;
-                    color: #0a3d62;
+                    background-color: #e0f7fa !important;
+                    color: #0a3d62 !important;
                     font-size: 18px;
                     font-family: Inter;
-                    border: 2px solid #0277bd;
+                    border: 2px solid #0277bd !important;
                     border-radius: 10px;
                     padding: 5px;
                 }
@@ -1065,11 +1076,29 @@ class Calculator(QMainWindow):
                     padding: 8px;
                 }
                 QListWidget::item:selected {
-                    background-color: #74a9cf;   
+                    background-color: #74a9cf !important;   
                     color: white;
                 }
             """)
-            self.standard_history.setStyleSheet(self.standard_history.styleSheet())
+
+            self.adv_history.setStyleSheet("""
+                QListWidget#advanced {
+                    background-color: #e0f7fa !important;
+                    color: #0a3d62 !important;
+                    font-size: 18px;
+                    font-family: Inter;
+                    border: 2px solid #0277bd !important;
+                    border-radius: 10px;
+                    padding: 5px;
+                }
+                QListWidget::item {
+                    padding: 8px;
+                }
+                QListWidget::item:selected {
+                    background-color: #74a9cf !important;   
+                    color: white;
+                }
+            """)
 
             self.conversion_list.setStyleSheet("""
                 QListWidget {
@@ -1095,10 +1124,29 @@ class Calculator(QMainWindow):
                 }
             """)
 
-            # Angle labels
-            self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #275569;")
-            self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #275569;")
-            self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #275569;")
+
+        ocean_history_style = """
+            QListWidget {
+                background-color: #e0f7fa !important;
+                color: #0a3d62 !important;
+                font-size: 18px;
+                font-family: Inter;
+                border: 2px solid #0277bd;
+                border-radius: 10px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+            }
+            QListWidget::item:selected {
+                background-color: #74a9cf !important;   
+                color: white !important;
+            }
+        """
+        
+        # Force apply to both history widgets
+        self.standard_history.setStyleSheet(ocean_history_style)
+        self.adv_history.setStyleSheet(ocean_history_style)
 
     # Apply sidebar theme LAST to avoid overwriting the button styles
         self.apply_sidebar_theme_ocean()
@@ -1331,11 +1379,6 @@ class Calculator(QMainWindow):
             }
         """)
 
-        # Angle labels
-        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #3a5a40;")
-        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #3a5a40;")
-        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #3a5a40;")
-
         # Theme button
         self.theme_button.setStyleSheet("""
             QPushButton {
@@ -1556,7 +1599,7 @@ class Calculator(QMainWindow):
         # Histories
         self.standard_history.setStyleSheet("""
             QListWidget#standard {
-                background-color: #fff9f4;
+                background-color: #fff4e6;
                 color: #4a1f1f;
                 font-size: 18px;
                 font-family: Inter;
@@ -1572,7 +1615,27 @@ class Calculator(QMainWindow):
                 color: white;
             }
         """)
-        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
+
+        self.adv_history.setStyleSheet("""
+            QListWidget#advanced {
+                background-color: #fff4e6;
+                color: #4a1f1f;
+                font-size: 18px;
+                font-family: Inter;
+                border: 2px solid #f7c59f;
+                border-radius: 10px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+            }
+            QListWidget::item:selected {
+                background-color: #ffcc80;   
+                color: white;
+            }
+        """)
+        self.adv_history.setStyleSheet(self.adv_history.styleSheet())
+        self.standard_history.setStyleSheet(self.standard_history.styleSheet())
 
         self.conversion_list.setStyleSheet("""
             QListWidget {
@@ -1597,11 +1660,6 @@ class Calculator(QMainWindow):
                 color: white;
             }
         """)
-
-        # Angle labels
-        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #d84315;")
-        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #d84315;")
-        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #d84315;")
 
         # Theme button
         self.theme_button.setStyleSheet("""
@@ -1882,10 +1940,6 @@ class Calculator(QMainWindow):
                         color: white;
                     }
                 """)
-
-        self.angle_label.setStyleSheet("font-size: 15px; font-family: Roboto; color: #ffffff;")
-        self.deg_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #ffffff;")
-        self.rad_mode.setStyleSheet("font-size: 15px; font-family: Roboto; color: #ffffff;")
 
         self.apply_sidebar_theme_dark()
 
@@ -2334,15 +2388,13 @@ class Calculator(QMainWindow):
                 btn.show()
             # Showing the degree and radians button when pressed
             self.angle_label.show()
-            self.deg_mode.show()
-            self.rad_mode.show()
+            self.angle_mode_combo.show()
         else:
             for btn in self.extra_btn_objs:
                 btn.hide()
                 # Hiding the degree and radians button when pressed
-                self.angle_label.hide()
-                self.deg_mode.hide()
-                self.rad_mode.hide()
+            self.angle_label.hide()
+            self.angle_mode_combo.hide()
 
     def set_angle_mode(self):
         if self.deg_mode.isChecked():

@@ -159,17 +159,17 @@ class Calculator(QMainWindow):
         top_bar = QHBoxLayout()
         self.menu_button = QPushButton("☰")
         self.menu_button.setToolTip("Menu")
-        self.menu_button.setStyleSheet("font-size: 25px; padding: 2px; background: none;")
+        self.menu_button.setStyleSheet("font-size: 30px; padding: 2px; background: none;")
         self.menu_button.clicked.connect(self.toggle_sidebar)
 
         self.mode_label = QLabel("Standard")
-        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto;")
+        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto;")
         top_bar.addWidget(self.menu_button)
         top_bar.addWidget(self.mode_label)
 
         self.theme_button = QPushButton("🎨")
         self.theme_button.setToolTip("Change Theme")
-        self.theme_button.setStyleSheet("font-size: 25px; padding: 2px; background: none;")
+        self.theme_button.setStyleSheet("font-size: 30px; padding: 2px; background: none; border: none;")
         self.theme_button.clicked.connect(self.show_theme_menu)
 
         top_bar.addStretch()  # Pushes everything to the left side
@@ -318,7 +318,6 @@ class Calculator(QMainWindow):
             """)
 
         # Show menu at button position
-        button_rect = self.theme_button.geometry()
         menu_pos = self.theme_button.mapToGlobal(self.theme_button.rect().bottomLeft())
         theme_menu.exec_(menu_pos)
 
@@ -329,32 +328,23 @@ class Calculator(QMainWindow):
         if theme_name == "light":
             self.apply_light_theme()
             self.apply_sidebar_theme_light()
-            # Explicitly set mode label for light theme
-            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #000000;")
 
         elif theme_name == "dark":
             self.apply_dark_theme()
             self.apply_sidebar_theme_dark()
-            # Explicitly set mode label for dark theme
-            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #ffffff;")
 
         elif theme_name == "ocean":
             self.apply_ocean_theme()
             self.apply_sidebar_theme_ocean()
-            # Explicitly set mode label for ocean theme
-            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #275569;")
 
         elif theme_name == "forest":
             self.apply_forest_theme()
             self.apply_sidebar_theme_forest()
-            # Explicitly set mode label for forest theme
-            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #2d3a2d;")
 
         elif theme_name == "sunset":
             self.apply_sunset_theme()
             self.apply_sidebar_theme_sunset()
-            # Explicitly set mode label for sunset theme
-            self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #5c2e1f;")
+
 
     # Applying light and dark mode themes to the sidebar:
     def apply_sidebar_theme_light(self):
@@ -384,7 +374,36 @@ class Calculator(QMainWindow):
                     }
                 """)
 
-        self.menu_button.setStyleSheet("background-color: white; font-size: 25px; border: none; padding: 7px;")
+
+        self.menu_button.setStyleSheet("""
+                QPushButton {
+                    background-color: white;
+                    color: #000; 
+                    border: none;
+                    font-size: 30px;
+                    border-radius: 5px;
+                    padding: 7px; }
+                                       
+                QPushButton:hover {
+                    background-color: #bdbdbd;
+                    }
+                """)
+        
+        self.theme_button.setStyleSheet("""
+                QPushButton {
+                    background: none;
+                    font-size: 30px;
+                    border: none;
+                    padding: 2px;
+                    color: #ffffff;
+                }
+                QPushButton:hover {
+                    background-color: #bdbdbd;
+                    border-radius: 5px;
+                }
+            """)
+        
+        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #000000;")
 
     def apply_sidebar_theme_ocean(self):
         self.sidebar.setStyleSheet("""
@@ -413,21 +432,40 @@ class Calculator(QMainWindow):
                             }
                         """)
 
-        self.menu_button.setStyleSheet("""
-                QPushButton {
-                    background-color: #e0f7fa;
-                    color: #0a3d62; 
-                    border: none;
-                    font-size: 25px;
-                    padding: 7px;
-                }
+        # Theme button - Style it BEFORE calling sidebar theme
+        self.theme_button.setStyleSheet("""
+            QPushButton {
+                background: none;
+                font-size: 30px;
+                border: none;
+                padding: 2px;
+                color: #275569;
+            }
+            QPushButton:hover {
+                background-color: #b8eaff;
+                border-radius: 5px;
+            }
+        """)
 
-                QPushButton:hover {
-                    background-color: #74a9cf;
-                }""")
+        # Menu button - Style it BEFORE calling sidebar theme  
+        self.menu_button.setStyleSheet("""
+            QPushButton {
+                background-color: #e0f7fa;
+                color: #0a3d62; 
+                border: none;
+                font-size: 30px;
+                border-radius: 5px;
+                padding: 7px;
+            }
+            QPushButton:hover {
+                background-color: #b8eaff;
+            }
+        """)
+
+        # Mode label
+        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #275569;")
 
     def apply_sidebar_theme_forest(self):
-        # Forest sidebar (reuse a light-ish sidebar for forest theme)
         self.sidebar.setStyleSheet("""
             QFrame {
                 background-color: #f0f0f0;
@@ -454,7 +492,38 @@ class Calculator(QMainWindow):
             }
         """)
 
-        self.menu_button.setStyleSheet("background-color: white; font-size: 25px; border: none; padding: 7px;")
+        # Theme button
+        self.theme_button.setStyleSheet("""
+            QPushButton {
+                background: none;
+                font-size: 30px;
+                border: none;
+                padding: 2px;
+                color: #2d3a2d;
+            }
+            QPushButton:hover {
+                background-color: #b9d1a9;
+                border-radius: 5px;
+            }
+        """)
+
+        # Menu button  
+        self.menu_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f3f7f2;
+                color: #2d3a2d; 
+                border: none;
+                font-size: 30px;
+                border-radius: 5px;
+                padding: 7px;
+            }
+            QPushButton:hover {
+                background-color: #b9d1a9;
+            }
+        """)
+
+        # Mode label
+        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #2d3a2d;")
 
     def apply_sidebar_theme_sunset(self):
         self.sidebar.setStyleSheet("""
@@ -479,6 +548,40 @@ class Calculator(QMainWindow):
                 color: white;
             }
         """)
+
+    # Theme button
+        self.theme_button.setStyleSheet("""
+            QPushButton {
+                background: none;
+                font-size: 30px;
+                border: none;
+                padding: 2px;
+                border-radius: 5px;
+
+                color: #ffffff;
+            }
+            QPushButton:hover {
+                background-color: #f7c59f;
+            }
+        """)
+
+        # Menu button  
+        self.menu_button.setStyleSheet("""
+            QPushButton {
+                background-color: #fff4e6;
+                color: #5c2e1f; 
+                border: none;
+                font-size: 30px;
+                border-radius: 5px;
+                padding: 7px;
+            }
+            QPushButton:hover {
+                background-color: #f7c59f;
+            }
+        """)
+
+        # Mode label
+        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #5c2e1f;")
 
     def apply_sidebar_theme_dark(self):
         self.sidebar.setStyleSheet("""
@@ -507,8 +610,40 @@ class Calculator(QMainWindow):
             }
         """)
 
-        self.menu_button.setStyleSheet("background-color: #2c2c2c; font-size: 25px; border: none; padding: 7px;")
+        # Theme button
+        self.theme_button.setStyleSheet("""
+            QPushButton {
+                background: none;
+                font-size: 30px;
+                border: none;
+                padding: 2px;
+                border-radius: 5px;
 
+                color: #ffffff;
+            }
+            QPushButton:hover {
+                background-color: #3c3c3c;
+            }
+        """)
+
+        # Menu button  
+        self.menu_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2c2c2c;
+                color: #ffffff; 
+                border: none;
+                font-size: 30px;
+                border-radius: 5px;
+                padding: 7px;
+            }
+            QPushButton:hover {
+                background-color: #3c3c3c;
+            }
+        """)
+
+        # Mode label
+        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #ffffff;")
+        
     def toggle_sidebar(self):
         sidebar_width = 200
         sidebar_height = self.height()
@@ -752,7 +887,7 @@ class Calculator(QMainWindow):
                 font-size: 18px;
                 font-family: Inter;
                 border: 2px solid #999;
-                border-radius: 10px;
+                border-radius: 8px;
                 padding: 5px;
             }
             QListWidget::item {
@@ -830,7 +965,7 @@ class Calculator(QMainWindow):
             }
             QListWidget::item {
                 padding: 12px;
-                border-radius: 4px;
+                border-radius: 5px;
                 margin: 2px;
                 background-color: white;
             }
@@ -857,7 +992,7 @@ class Calculator(QMainWindow):
                 font-family: SF Mono, monospace;
                 padding: 7px;
                 border: 2px solid #0277bd;
-                border-radius: 10px;
+                border-radius: 8px;
             }
         """)
 
@@ -885,38 +1020,6 @@ class Calculator(QMainWindow):
                 }
             """)
 
-        # Theme button - Style it BEFORE calling sidebar theme
-        self.theme_button.setStyleSheet("""
-            QPushButton {
-                background: none;
-                font-size: 25px;
-                border: none;
-                padding: 2px;
-                color: #275569;
-            }
-            QPushButton:hover {
-                background-color: #b8eaff;
-                border-radius: 4px;
-            }
-        """)
-
-        # Menu button - Style it BEFORE calling sidebar theme  
-        self.menu_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e0f7fa;
-                color: #0a3d62; 
-                border: none;
-                font-size: 25px;
-                padding: 7px;
-            }
-            QPushButton:hover {
-                background-color: #74a9cf;
-            }
-        """)
-
-        # Mode label
-        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #275569;")
-
             # Buttons
         for button in self.standard_buttons + self.advanced_buttons:
                 text = button.text()
@@ -942,7 +1045,7 @@ class Calculator(QMainWindow):
                             color: #7f1d1d;
                             font-size: 25px;
                             font-family: Inter;
-                            border-radius: 8px;
+                            border-radius: 5px;
                             border: 1px solid #ff6b6b;
                         }
                         QPushButton:hover {
@@ -973,7 +1076,7 @@ class Calculator(QMainWindow):
                             color: #343161;
                             font-size: 22px;
                             font-family: Inter;
-                            border-radius: 8px;
+                            border-radius: 5px;
                         }
                         QPushButton:hover {
                             background-color: #bab6fa;
@@ -1039,7 +1142,7 @@ class Calculator(QMainWindow):
                             color: #7f1d1d;
                             font-size: 25px;
                             font-family: Inter;
-                            border-radius: 8px;
+                            border-radius: 5px;
                             border: 1px solid #ff6b6b;
                         }
                         QPushButton:hover {
@@ -1069,7 +1172,7 @@ class Calculator(QMainWindow):
                     font-size: 18px;
                     font-family: Inter;
                     border: 2px solid #0277bd !important;
-                    border-radius: 10px;
+                    border-radius: 8px;
                     padding: 5px;
                 }
                 QListWidget::item {
@@ -1088,7 +1191,7 @@ class Calculator(QMainWindow):
                     font-size: 18px;
                     font-family: Inter;
                     border: 2px solid #0277bd !important;
-                    border-radius: 10px;
+                    border-radius: 8px;
                     padding: 5px;
                 }
                 QListWidget::item {
@@ -1113,7 +1216,7 @@ class Calculator(QMainWindow):
                 QListWidget::item {
                     padding: 12px;
                     margin: 2px;
-                    border-radius: 4px;
+                    border-radius: 5px;
                 }
                 QListWidget::item:hover {
                     background-color: #e3f2fd;
@@ -1132,7 +1235,7 @@ class Calculator(QMainWindow):
                 font-size: 18px;
                 font-family: Inter;
                 border: 2px solid #0277bd;
-                border-radius: 10px;
+                border-radius: 8px;
                 padding: 5px;
             }
             QListWidget::item {
@@ -1161,7 +1264,7 @@ class Calculator(QMainWindow):
                 font-family: SF Mono, monospace;
                 padding: 7px;
                 border: 2px solid #a3c9a8;
-                border-radius: 10px;
+                border-radius: 8px;
             }
         """)
 
@@ -1214,7 +1317,7 @@ class Calculator(QMainWindow):
                         color: #5c2c0c;
                         font-size: 25px;
                         font-family: Inter;
-                        border-radius: 8px;
+                        border-radius: 5px;
                         border: 1px solid #d4a373;
                     }
                     QPushButton:hover {
@@ -1245,7 +1348,7 @@ class Calculator(QMainWindow):
                         color: #4a3728;
                         font-size: 22px;
                         font-family: Inter;
-                        border-radius: 8px;
+                        border-radius: 5px;
                         border: 1px solid #c8ad7f;
                     }
                     QPushButton:hover {
@@ -1312,7 +1415,7 @@ class Calculator(QMainWindow):
                         color: #5c2c0c;
                         font-size: 25px;
                         font-family: Inter;
-                        border-radius: 8px;
+                        border-radius: 5px;
                         border: 1px solid #d4a373;
                     }
                     QPushButton:hover {
@@ -1342,7 +1445,7 @@ class Calculator(QMainWindow):
                 font-size: 18px;
                 font-family: Inter;
                 border: 2px solid #9cbf9c;
-                border-radius: 10px;
+                border-radius: 8px;
                 padding: 5px;
             }
             QListWidget::item {
@@ -1368,7 +1471,7 @@ class Calculator(QMainWindow):
             QListWidget::item {
                 padding: 12px;
                 margin: 2px;
-                border-radius: 4px;
+                border-radius: 5px;
             }
             QListWidget::item:hover {
                 background-color: #e0f0e0;
@@ -1378,38 +1481,6 @@ class Calculator(QMainWindow):
                 color: white;
             }
         """)
-
-        # Theme button
-        self.theme_button.setStyleSheet("""
-            QPushButton {
-                background: none;
-                font-size: 25px;
-                border: none;
-                padding: 2px;
-                color: #2d3a2d;
-            }
-            QPushButton:hover {
-                background-color: #dbead1;
-                border-radius: 4px;
-            }
-        """)
-
-        # Menu button  
-        self.menu_button.setStyleSheet("""
-            QPushButton {
-                background-color: #f3f7f2;
-                color: #2d3a2d; 
-                border: none;
-                font-size: 25px;
-                padding: 7px;
-            }
-            QPushButton:hover {
-                background-color: #a3c9a8;
-            }
-        """)
-
-        # Mode label
-        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #2d3a2d;")
 
         self.apply_sidebar_theme_forest()
 
@@ -1423,7 +1494,7 @@ class Calculator(QMainWindow):
                 font-family: SF Mono, monospace;
                 padding: 7px;
                 border: 2px solid #f7c59f;
-                border-radius: 10px;
+                border-radius: 8px;
             }
         """)
 
@@ -1476,7 +1547,7 @@ class Calculator(QMainWindow):
                         color: #6d2f1a;
                         font-size: 25px;
                         font-family: Inter;
-                        border-radius: 8px;
+                        border-radius: 5px;
                         border: 1px solid #e0b7a0;
                     }
                     QPushButton:hover {
@@ -1507,7 +1578,7 @@ class Calculator(QMainWindow):
                         color: #4a2500;
                         font-size: 22px;
                         font-family: Inter;
-                        border-radius: 8px;
+                        border-radius: 5px;
                         border: 1px solid #ffab40;
                     }
                     QPushButton:hover {
@@ -1574,7 +1645,7 @@ class Calculator(QMainWindow):
                         color: #6d2f1a;
                         font-size: 25px;
                         font-family: Inter;
-                        border-radius: 8px;
+                        border-radius: 5px;
                         border: 1px solid #e0b7a0;
                     }
                     QPushButton:hover {
@@ -1604,7 +1675,7 @@ class Calculator(QMainWindow):
                 font-size: 18px;
                 font-family: Inter;
                 border: 2px solid #f7c59f;
-                border-radius: 10px;
+                border-radius: 8px;
                 padding: 5px;
             }
             QListWidget::item {
@@ -1623,7 +1694,7 @@ class Calculator(QMainWindow):
                 font-size: 18px;
                 font-family: Inter;
                 border: 2px solid #f7c59f;
-                border-radius: 10px;
+                border-radius: 8px;
                 padding: 5px;
             }
             QListWidget::item {
@@ -1650,7 +1721,7 @@ class Calculator(QMainWindow):
             QListWidget::item {
                 padding: 12px;
                 margin: 2px;
-                border-radius: 4px;
+                border-radius: 5px;
             }
             QListWidget::item:hover {
                 background-color: #ffe0b2;
@@ -1660,38 +1731,6 @@ class Calculator(QMainWindow):
                 color: white;
             }
         """)
-
-        # Theme button
-        self.theme_button.setStyleSheet("""
-            QPushButton {
-                background: none;
-                font-size: 25px;
-                border: none;
-                padding: 2px;
-                color: #5c2e1f;
-            }
-            QPushButton:hover {
-                background-color: #ffe0b2;
-                border-radius: 4px;
-            }
-        """)
-
-        # Menu button  
-        self.menu_button.setStyleSheet("""
-            QPushButton {
-                background-color: #fff4e6;
-                color: #5c2e1f; 
-                border: none;
-                font-size: 25px;
-                padding: 7px;
-            }
-            QPushButton:hover {
-                background-color: #f7c59f;
-            }
-        """)
-
-        # Mode label
-        self.mode_label.setStyleSheet("font-size: 25px; font-weight: bold; font-family: Roboto; color: #5c2e1f;")
 
         self.apply_sidebar_theme_sunset()
 
@@ -1703,7 +1742,7 @@ class Calculator(QMainWindow):
                 font-family: SF Mono;
                 padding: 7px;
                 border: 2px solid #666666;
-                border-radius: 10px;
+                border-radius: 8px;
             }""")
 
         self.setStyleSheet("""
@@ -1718,7 +1757,7 @@ class Calculator(QMainWindow):
                 font-size: 23px;
                 font-family: SF Mono;
                 border: 2px solid #444;
-                border-radius: 10px;
+                border-radius: 8px;
             }
             QLineEdit#conversion_result {
                 background-color: #1e1e1e;
@@ -1726,7 +1765,7 @@ class Calculator(QMainWindow):
                 font-size: 23px;
                 font-family: SF Mono;
                 border: 2px solid #444;
-                border-radius: 10px;
+                border-radius: 8px;
             }
             QComboBox#conversion_combo {
                 background-color: #1e1e1e;
@@ -1734,7 +1773,7 @@ class Calculator(QMainWindow):
                 font-size: 18px;
                 font-family: SF Mono, monospaced;
                 border: 2px solid #444;
-                border-radius: 10px;
+                border-radius: 8px;
             }
         """)
 
@@ -1883,7 +1922,7 @@ class Calculator(QMainWindow):
                             font-size: 18px;
                             font-family: Inter;
                             border: 2px solid #666;
-                            border-radius: 10px;
+                            border-radius: 8px;
                             padding: 5px;
                         }
                         QListWidget::item {
@@ -1902,7 +1941,7 @@ class Calculator(QMainWindow):
                                     font-size: 18px;
                                     font-family: Inter;
                                     border: 2px solid #666;
-                                    border-radius: 10px;
+                                    border-radius: 8px;
                                     padding: 5px;
                                 }
                                 QListWidget::item {
@@ -1927,7 +1966,7 @@ class Calculator(QMainWindow):
                     }
                     QListWidget::item {
                         padding: 12px;
-                        border-radius: 4px;
+                        border-radius: 5px;
                         font-family: Inter;
                         margin: 2px;
                         background-color: #1e1e1e;
@@ -2669,7 +2708,7 @@ class Calculator(QMainWindow):
                 QListWidget::item {
                     padding: 12px;
                     margin: 2px;
-                    border-radius: 4px;
+                    border-radius: 5px;
                 }
                 QListWidget::item:hover {
                     background-color: #e3f2fd;
@@ -2693,7 +2732,7 @@ class Calculator(QMainWindow):
                 QListWidget::item {
                     padding: 12px;
                     margin: 2px;
-                    border-radius: 4px;
+                    border-radius: 5px;
                 }
                 QListWidget::item:hover {
                     background-color: #cde3cd;
@@ -2717,7 +2756,7 @@ class Calculator(QMainWindow):
                 QListWidget::item {
                     padding: 12px;
                     margin: 2px;
-                    border-radius: 4px;
+                    border-radius: 5px;
                 }
                 QListWidget::item:hover {
                     background-color: #ffe0b2;
@@ -2738,7 +2777,7 @@ class Calculator(QMainWindow):
                 }
                 QListWidget::item {
                     padding: 12px;
-                    border-radius: 4px;
+                    border-radius: 5px;
                     font-family: Inter;
                     margin: 2px;
                 }
@@ -3036,7 +3075,10 @@ class Calculator(QMainWindow):
         # NUMPAD SECTION
         numpad_widget = QWidget()
         numpad_layout = QGridLayout()
-        numpad_layout.setSpacing(5)
+
+        numpad_layout.setHorizontalSpacing(1)  
+        numpad_layout.setVerticalSpacing(10)   
+
 
         # Define numpad buttons
         numpad_buttons = [
@@ -3060,6 +3102,9 @@ class Calculator(QMainWindow):
                 # Connect button clicks using lambda
                 button.clicked.connect(lambda checked, text=button_text: self.handle_numpad_input(text, from_value))
                 numpad_layout.addWidget(button, row, col)
+
+                numpad_layout.setColumnStretch(col, 0)
+                numpad_layout.setRowStretch(row, 0)
 
         numpad_widget.setLayout(numpad_layout)
         layout.addWidget(numpad_widget)

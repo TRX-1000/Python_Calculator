@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QGridLayout, QPush
 # QSizePolicy helps to scale the widgets in accordance to the window size
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve  # For alignment and animations
 
+from PyQt5.QtGui import QIcon
+
 
 class Calculator(QMainWindow):
     # The 'Calculator' class has to inherit from the QMainWindow class instead of the QWidget class because
@@ -17,7 +19,8 @@ class Calculator(QMainWindow):
 
         self.setWindowTitle("Calculator")
 
-        self.setGeometry(600, 200, 450, 800)
+        self.setGeometry(600, 200, 420, 785)
+        self.setMinimumSize(420, 785)
         # Set the position of the window
 
         self.current_theme = "light"
@@ -35,8 +38,6 @@ class Calculator(QMainWindow):
         # Create the universal display container
         self.display_container = QWidget()
         display_layout = QVBoxLayout()
-        # Remove margins so the display lines up cleanly with other widgets
-        display_layout.setContentsMargins(0, 0, 0, 0)
         display_layout.setSpacing(0)
 
         # Create the actual QLineEdit display
@@ -51,15 +52,24 @@ class Calculator(QMainWindow):
         display_layout.addWidget(self.display)
         self.display_container.setLayout(display_layout)
 
+        # Creating a button to toggle the history panel
+        self.history_button = QPushButton()
+        self.history_button.setIcon(QIcon("icons/history_icon.svg"))  
+        self.history_button.setToolTip("Show/Hide History")
+        self.history_button.setFixedSize(40, 40)
+        self.history_button.clicked.connect(lambda: self.current_history.setVisible(not self.current_history.isVisible()))
+
         # Creating a history widget for standard mode:
         self.standard_history = QListWidget()
         self.standard_history.setFixedHeight(100)
         self.standard_history.setObjectName("standard")
+        self.standard_history.setVisible(False)  # Initially hidden
 
         # Creating a history widget for advanced mode:
         self.adv_history = QListWidget()
         self.adv_history.setFixedHeight(100)
         self.adv_history.setObjectName("advanced")
+        self.adv_history.setVisible(False)  # Initially hidden
 
         self.set_current_history("standard")
         # Default history is 'standard' since default page is 'standard
@@ -166,6 +176,8 @@ class Calculator(QMainWindow):
         self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto;")
         top_bar.addWidget(self.menu_button)
         top_bar.addWidget(self.mode_label)
+
+        top_bar.addWidget(self.history_button)
 
         self.theme_button = QPushButton("🎨")
         self.theme_button.setToolTip("Change Theme")
@@ -463,35 +475,35 @@ class Calculator(QMainWindow):
         """)
 
         # Mode label
-        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #275569;")
+        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #0a3d62;")
 
     def apply_sidebar_theme_forest(self):
         self.sidebar.setStyleSheet("""
-            QFrame {
-                background-color: #f0f0f0;
-                border-right: 1px solid #ccc;
-            }
-            QListWidget {
-                background: transparent;
-                color: #000;
-                font-size: 16px;
-                font-family: Roboto;
-                border: none;
-            }
-            QListWidget::item {
-                padding: 12px;
-                font-family: Roboto;
-                border-radius: 8px;
-            }
-            QListWidget::item:hover {
-                background-color: #e0e0e0;
-            }
-            QListWidget::item:selected {
-                background-color: #0078d7;
-                color: white;
-            }
-        """)
-
+        QFrame {
+            background-color: #d4e6d4;
+            border-right: 1px solid #9cbf9c;
+        }
+        QListWidget {
+            background: transparent;
+            color: #2d3a2d;
+            font-size: 16px;
+            font-family: Roboto;
+            border: none;
+        }
+        QListWidget::item {
+            padding: 12px;
+            font-family: Roboto;
+            border-radius: 8px;
+        }
+        QListWidget::item:hover {
+            background-color: #c4dcc4;
+        }
+        QListWidget::item:selected {
+            background-color: #7ba05b;
+            color: white;
+        }
+    """)
+        
         # Theme button
         self.theme_button.setStyleSheet("""
             QPushButton {
@@ -527,27 +539,30 @@ class Calculator(QMainWindow):
 
     def apply_sidebar_theme_sunset(self):
         self.sidebar.setStyleSheet("""
-            QFrame#sidebar {
-                background-color: #ffe0b2;
-                border-right: 2px solid #f7b267;
-            }
-            QPushButton {
-                background-color: #fdd9a0;
-                color: #5c2e1f;
-                font-size: 18px;
-                font-family: Inter;
-                border-radius: 5px;
-                border: 1px solid #f7b267;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #fbb76b;
-            }
-            QPushButton:checked {
-                background-color: #ff7043;
-                color: white;
-            }
-        """)
+        QFrame {
+            background-color: #ffe0b2;
+            border-right: 2px solid #f7b267;
+        }
+        QListWidget {
+            background: transparent;
+            color: #5c2e1f;
+            font-size: 16px;
+            font-family: Roboto;
+            border: none;
+        }
+        QListWidget::item {
+            padding: 12px;
+            font-family: Roboto;
+            border-radius: 8px;
+        }
+        QListWidget::item:hover {
+            background-color: #ffcc80;
+        }
+        QListWidget::item:selected {
+            background-color: #ff7043;
+            color: white;
+        }
+    """)
 
     # Theme button
         self.theme_button.setStyleSheet("""
@@ -1209,7 +1224,7 @@ class Calculator(QMainWindow):
                     font-family: Inter;
                     background-color: #f1fbff;
                     color: #0a3d62;
-                    border: 2px solid #74a9cf;
+                    border: 2px solid #74a9cf;  
                     border-radius: 8px;
                     padding: 5px;
                 }
@@ -1231,7 +1246,7 @@ class Calculator(QMainWindow):
         ocean_history_style = """
             QListWidget {
                 background-color: #e0f7fa !important;
-                color: #0a3d62 !important;
+                color: #275569 !important;
                 font-size: 18px;
                 font-family: Inter;
                 border: 2px solid #0277bd;
@@ -2792,7 +2807,7 @@ class Calculator(QMainWindow):
 
         # Adding conversion categories to the list:
         conversion_types = ["Length", "Weight and Mass", "Volume", "Temperature", "Energy",
-                            "Area", "Speed", "Time", "Power", "Data", "Pressure", "Angle"]
+                            "Area", "Speed", "Time", "Power", "Data", "Pressure", "Angle", "Number Systems"]
 
         self.conversion_list.addItems(conversion_types)
         self.conversion_list.itemClicked.connect(self.open_conversion_calculator)
@@ -2962,7 +2977,12 @@ class Calculator(QMainWindow):
                     "Electronvolt": 1.602e-19,
                     "Foot-Pound": 1.35582
                 }
+            },
+            "Number Systems": {
+                "special": True,  # Special handling needed
+                "units": ["Binary", "Octal", "Decimal", "Hexadecimal"]
             }
+            
         }
 
         page.setLayout(layout)
@@ -2986,7 +3006,7 @@ class Calculator(QMainWindow):
 
         # Switch to this conversion page
         self.page_layout.setCurrentWidget(getattr(self, page_name))
-        self.mode_label.setText(f"Conversions - {conversion_type}")
+        self.mode_label.setText("Conversions")
         # Re-apply the current theme to ensure newly shown conversion page widgets get styled
         self.change_theme(self.current_theme)
 
@@ -3004,6 +3024,16 @@ class Calculator(QMainWindow):
         if self.current_theme == 'light':
             back_button.setStyleSheet("font-size: 16px;"
                                       "font-family: Roboto;")
+        if self.current_theme == 'ocean':
+            back_button.setStyleSheet("font-size: 16px;"
+                                      "font-family: Roboto;")
+        if self.current_theme == 'forest':
+            back_button.setStyleSheet("font-size: 16px;"
+                                      "font-family: Roboto;")
+        if self.current_theme == 'sunset':
+            back_button.setStyleSheet("font-size: 16px;"
+                                      "font-family: Roboto;"
+)
 
         # No parameters needed - uses instance variable approach
         back_button.clicked.connect(self.go_back_to_conversions)
@@ -3013,7 +3043,7 @@ class Calculator(QMainWindow):
 
         # Creating a title based on the selected conversion type:
         title = QLabel(f"{conversion_type} Conversion")
-        title.setStyleSheet("font-size: 22px;"
+        title.setStyleSheet("font-size: 25px;"
                             "font-family: Roboto;"
                             "font-weight: bold;"
                             "padding: 15px;")
@@ -3163,18 +3193,24 @@ class Calculator(QMainWindow):
 
     def setup_conversion_units(self, conversion_type, from_combo, to_combo):
         """Setup the units for a specific conversion type"""
+        
         if conversion_type in self.conversion_data:
-            if conversion_type == "Temperature":
+            # Handle special conversion types (Temperature and Number Systems)
+            if self.conversion_data[conversion_type].get("special"):
                 units = self.conversion_data[conversion_type]["units"]
+                from_combo.addItems(units)
+                to_combo.addItems(units)
+                # Set different defaults
+                if len(units) > 1:
+                    to_combo.setCurrentIndex(1)
             else:
+                # Handle normal conversion types (Length, Weight, Volume, etc.)
                 units = list(self.conversion_data[conversion_type]["units"].keys())
-
-            from_combo.addItems(units)
-            to_combo.addItems(units)
-
-            # Set different defaults
-            if len(units) > 1:
-                to_combo.setCurrentIndex(1)
+                from_combo.addItems(units)
+                to_combo.addItems(units)
+                # Set different defaults
+                if len(units) > 1:
+                    to_combo.setCurrentIndex(1)
 
     def perform_specific_conversion(self, conversion_type):
         """Perform conversion for a specific type"""
@@ -3191,9 +3227,16 @@ class Calculator(QMainWindow):
                 to_value.clear()
                 return
 
-            value = float(input_text)
             from_unit_name = from_unit.currentText()
             to_unit_name = to_unit.currentText()
+
+            if conversion_type == "Number Systems":
+                result = self.convert_number_systems(input_text, from_unit_name, to_unit_name)
+                to_value.setText(result)
+                return
+
+            # For all other conversions, convert to float
+            value = float(input_text)
 
             # Perform conversion
             if conversion_type == "Temperature":
@@ -3216,6 +3259,39 @@ class Calculator(QMainWindow):
             to_value.setText("Invalid input")
         except Exception:
             to_value.setText("Error")
+
+    def convert_number_systems(self, value, from_unit, to_unit):
+        """Handle number system conversions"""
+        if from_unit == to_unit:
+            return value
+
+        try:
+            # Convert to decimal first
+            if from_unit == "Binary":
+                decimal = int(value, 2)
+            elif from_unit == "Octal":
+                decimal = int(value, 8)
+            elif from_unit == "Decimal":
+                decimal = int(value)
+            elif from_unit == "Hexadecimal":
+                decimal = int(value, 16)
+            else:
+                return "Error"
+
+            # Convert from decimal to target
+            if to_unit == "Binary":
+                return bin(decimal)[2:]  # Remove '0b' prefix
+            elif to_unit == "Octal":
+                return oct(decimal)[2:]  # Remove '0o' prefix
+            elif to_unit == "Decimal":
+                return str(decimal)
+            elif to_unit == "Hexadecimal":
+                return hex(decimal)[2:].upper()  # Remove '0x' prefix and uppercase
+            else:
+                return "Error"
+
+        except ValueError:
+            return "Invalid input"
 
     def convert_temperature(self, value, from_unit, to_unit):
         """Handle temperature conversions"""
@@ -3242,13 +3318,11 @@ class Calculator(QMainWindow):
         else:  # Celsius
             return celsius
 
-
 def main():
     app = QApplication(sys.argv)
     window = Calculator()
     window.show()
     sys.exit(app.exec_())
-
 
 if __name__ == '__main__':
     main()

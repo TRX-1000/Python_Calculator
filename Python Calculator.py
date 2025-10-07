@@ -1,26 +1,22 @@
 import math
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QGridLayout, QPushButton, QVBoxLayout, QSizePolicy, \
-    QRadioButton, QLabel, QHBoxLayout, QButtonGroup, QListWidget, QMainWindow, QFrame, QStackedWidget, QComboBox, QMenu, QAction
+     QLabel, QHBoxLayout, QListWidget, QMainWindow, QFrame, QStackedWidget, QComboBox, QMenu, QAction, QRadioButton
 
-# QListWidget helps to display history
 # QSizePolicy helps to scale the widgets in accordance to the window size
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve  # For alignment and animations
 
 from PyQt5.QtGui import QIcon
 
-
 class Calculator(QMainWindow):
-    # The 'Calculator' class has to inherit from the QMainWindow class instead of the QWidget class because
-    # 'addDockWidget' is only available in QMainWindow
     def __init__(self):
         super().__init__()
         # Calls the parent QWidget constructor
 
         self.setWindowTitle("Calculator")
 
-        self.setGeometry(600, 200, 420, 785)
-        self.setMinimumSize(420, 785)
+        self.setGeometry(600, 200, 400, 700)
+        self.setMinimumSize(400, 700)
         # Set the position of the window
 
         self.current_theme = "light"
@@ -57,22 +53,6 @@ class Calculator(QMainWindow):
         self.history_button.setIcon(QIcon("icons/history_icon.svg"))  
         self.history_button.setToolTip("Show/Hide History")
         self.history_button.setFixedSize(40, 40)
-        self.history_button.clicked.connect(lambda: self.current_history.setVisible(not self.current_history.isVisible()))
-
-        # Creating a history widget for standard mode:
-        self.standard_history = QListWidget()
-        self.standard_history.setFixedHeight(100)
-        self.standard_history.setObjectName("standard")
-        self.standard_history.setVisible(False)  # Initially hidden
-
-        # Creating a history widget for advanced mode:
-        self.adv_history = QListWidget()
-        self.adv_history.setFixedHeight(100)
-        self.adv_history.setObjectName("advanced")
-        self.adv_history.setVisible(False)  # Initially hidden
-
-        self.set_current_history("standard")
-        # Default history is 'standard' since default page is 'standard
 
         # Create central widget: In QMainWindow, you can't just add layouts directly; you need to set a centralWidget
         # that holds the main layout
@@ -87,16 +67,406 @@ class Calculator(QMainWindow):
         self.sidebar.setStyleSheet("background-color: #2c2c2c;"
                                    "color: white;")
         self.sidebar.hide()  # Sidebar is hidden initially
+        self.sidebar_layout = QVBoxLayout(self.sidebar)
+        self.sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        self.sidebar_layout.setSpacing(0)
 
         # Menu options:
         self.menu_list = QListWidget(self.sidebar)
         self.menu_list.setObjectName("menu_list")
         self.menu_list.addItems(["Standard", "Advanced", "Conversions"])
         self.menu_list.itemClicked.connect(self.change_mode)
-        self.menu_list.setGeometry(0, 0, 200, self.height())
+        self.sidebar_layout.addWidget(self.menu_list)  # Add to layout instead
+
+        self.sidebar_layout.addStretch()  # Pushes menu to the top
+
+        # Settings button at the bottom of the sidebar
+        self.settings_button = QPushButton("⚙️ Settings", self.sidebar)
+        self.settings_button.setStyleSheet("font-size: 18px; padding: 10px; background: none; border: none;")
+        self.settings_button.setToolTip("Settings")
+        self.sidebar_layout.addWidget(self.settings_button, alignment=Qt.AlignBottom)
+
+        # Creating a right side sidebar for displaying history
+        self.right_sidebar = QWidget(self)
+        self.right_sidebar.setFixedWidth(250)
+        self.right_sidebar.setGeometry(self.width(), 0, 250, self.height() - 60)
+
+        right_layout = QVBoxLayout(self.right_sidebar)
+        right_layout.setContentsMargins(10, 10, 10, 10)
+
+        # History title
+        history_title = QLabel("History")
+        history_title.setStyleSheet("font-size: 24px; font-weight: bold; font-family: Roboto;")
+        right_layout.addWidget(history_title)
+
+        self.history_open = False
+        self.menu_open = False
+
+        # Separate histories for standard and advanced modes
+        self.standard_history = QListWidget()
+        self.advanced_history = QListWidget()
+
+        # Adding double click functionality to history items
+        self.standard_history.itemDoubleClicked.connect(self.use_history_item)
+        self.advanced_history.itemDoubleClicked.connect(self.use_history_item)
+
+
+        # Creating a stacked widget (switches with mode)
+        self.history_stack = QStackedWidget()
+        self.history_stack.addWidget(self.standard_history)  # index 0
+        self.history_stack.addWidget(self.advanced_history)  # index 1
+        right_layout.addWidget(self.history_stack)
+        self.history_stack.setCurrentIndex(0)  # Default to standard history
+        self.history_button.clicked.connect(self.toggle_history)
+
+        # Clear button at bottom
+        right_layout.addStretch()
+        clear_btn = QPushButton("Clear History")
+        clear_btn.clicked.connect(lambda: self.current_history().clear())
+        right_layout.addWidget(clear_btn, alignment=Qt.AlignBottom)
+
+        self.overlay = QWidget(self)
+        self.overlay.setStyleSheet("background-color: rgba(0, 0, 0, 80);")
+        self.overlay.hide()
+
+        self.overlay.mousePressEvent = self.close_sidebar_on_click
+
 
         self.initUI()
         # Calling the function that creates the user interface
+
+    def create_settings_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        theme_container = QWidget()
+        theme_layout = QVBoxLayout(theme_container)
+        theme_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.theme_toggle_button = QPushButton("Appearance  ▼")
+        self.theme_toggle_button.setFixedSize(175, 40)
+        self.theme_toggle_button.setCheckable(True)
+        self.theme_toggle_button.setChecked(False)
+        self.theme_toggle_button.setStyleSheet("""
+            QPushButton {
+                text-align: left;
+                font-size: 22px;
+                font-weight: bold;
+                border: none;
+                padding: 5px;
+                font-family: Roboto;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #bdbdbd;
+            }
+        """)
+        theme_layout.addWidget(self.theme_toggle_button)
+
+        # Collapsible content area
+        self.theme_content = QFrame()
+        self.theme_content.setMaximumHeight(0)
+        self.theme_content.setStyleSheet("background: transparent;")
+
+        theme_content_layout = QVBoxLayout(self.theme_content)
+        theme_content_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Description label
+        desc = QLabel("Select which app theme to display")
+        desc.setStyleSheet("font-size: 15px; color: #666; text-align: left;")
+        theme_layout.addWidget(desc)
+
+        # Theme radio buttons
+        themes = {
+            "Light": "light",
+            "Dark": "dark",
+            "Ocean": "ocean",
+            "Forest": "forest",
+            "Sunset": "sunset"
+        }
+
+        for name, value in themes.items():
+            radio = QRadioButton(name)
+            radio.toggled.connect(lambda checked, v=value: checked and self.change_theme(v))
+            radio.setStyleSheet("font-size: 18px;")
+            theme_content_layout.addWidget(radio)
+
+        # Add the collapsible area
+        theme_layout.addWidget(self.theme_content)
+        layout.addWidget(theme_container)
+
+        # --- Animation for collapsing ---
+        self.theme_anim = QPropertyAnimation(self.theme_content, b"maximumHeight")
+        self.theme_anim.setDuration(300)
+        self.theme_anim.setEasingCurve(QEasingCurve.InOutCubic)
+
+        def toggle_theme_section():
+            checked = self.theme_toggle_button.isChecked()
+            text = "Appearance  ▲" if checked else "Appearance  ▼"
+            self.theme_toggle_button.setText(text)
+            start, end = (0, self.theme_content.sizeHint().height()) if checked else (self.theme_content.height(), 0)
+            self.theme_anim.setStartValue(start)
+            self.theme_anim.setEndValue(end)
+            self.theme_anim.start()
+
+        self.theme_toggle_button.clicked.connect(toggle_theme_section)
+
+        # Separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(separator)
+
+        layout.addSpacing(20)
+        
+        self.about_container = QWidget()
+        self.about_layout = QVBoxLayout(self.about_container)
+        self.about_button = QPushButton("About ▼")
+        self.about_button.setFixedSize(100, 40)
+        self.about_button.setCheckable(True)
+        self.about_button.setChecked(False)
+        self.about_button.setStyleSheet("""
+            QPushButton {
+                text-align: left;
+                font-size: 22px;
+                font-weight: bold;
+                border: none;
+                padding: 5px;
+                font-family: Roboto;
+                border-radius: 5px;
+            }
+            
+            QPushButton:hover {
+                background-color: #bdbdbd;
+            }
+        """)
+
+        self.about_layout.addWidget(self.about_button)
+
+        # Collapsible content area:
+        self.about_content = QFrame()
+        self.about_content.setMaximumHeight(0)
+        self.about_content.setStyleSheet("background: tranparent;")
+        self.about_content_layout = QVBoxLayout(self.about_content)
+
+        # About label:
+        about = QLabel("Calculator\n© 2025 Microsoft. All rights reserved.\nBuild Version: 2.01.25")
+        about.setStyleSheet("font-size: 15px; color: #666; text-align: left;")
+        
+        self.about_layout.addWidget(about)
+
+        self.about_layout.addWidget(self.about_content)
+        layout.addWidget(self.about_container)
+
+        # Animation for collapsing:
+        self.about_anim = QPropertyAnimation(self.about_content, b"maximumHeight")
+        self.about_anim.setDuration(250)
+        self.about_anim.setEasingCurve(QEasingCurve.InOutCubic)
+
+        def toggle_about_section():
+            checked = self.about_button.isChecked()
+            text = "About ▲" if checked else "About ▼"
+            self.about_button.setText(text)
+            start, end = (0, self.about_content.sizeHint().height()) if checked else (self.about_content.height(), 0)      
+            self.about_anim.setStartValue(start)
+            self.about_anim.setEndValue(end)
+            self.about_anim.start()
+        self.about_button.clicked.connect(toggle_about_section)
+
+        layout.addStretch()
+
+        return page
+    
+    def show_theme_menu_in_settings(self):
+        """Show theme menu when button is clicked in settings"""
+        theme_menu = QMenu(self)
+
+        # Create theme actions
+        light_action = QAction("Light", self)
+        light_action.setCheckable(True)
+        light_action.triggered.connect(lambda: self.change_theme_from_settings("light"))
+
+        dark_action = QAction("Dark", self)
+        dark_action.setCheckable(True)
+        dark_action.triggered.connect(lambda: self.change_theme_from_settings("dark"))
+
+        ocean_action = QAction("Ocean", self)
+        ocean_action.setCheckable(True)
+        ocean_action.triggered.connect(lambda: self.change_theme_from_settings("ocean"))
+
+        forest_action = QAction("Forest", self)
+        forest_action.setCheckable(True)
+        forest_action.triggered.connect(lambda: self.change_theme_from_settings("forest"))
+
+        sunset_action = QAction("Sunset", self)
+        sunset_action.setCheckable(True)
+        sunset_action.triggered.connect(lambda: self.change_theme_from_settings("sunset"))
+
+        # Add actions to menu
+        theme_menu.addAction(light_action)
+        theme_menu.addAction(dark_action)
+        theme_menu.addAction(ocean_action)
+        theme_menu.addAction(forest_action)
+        theme_menu.addAction(sunset_action)
+
+        # Check current theme
+        if self.current_theme == "light":
+            light_action.setChecked(True)
+        elif self.current_theme == "dark":
+            dark_action.setChecked(True)
+        elif self.current_theme == "ocean":
+            ocean_action.setChecked(True)
+        elif self.current_theme == "forest":
+            forest_action.setChecked(True)
+        elif self.current_theme == "sunset":
+            sunset_action.setChecked(True)
+
+        # Style the menu based on current theme
+        if self.current_theme == "dark":
+            theme_menu.setStyleSheet("""
+                QMenu {
+                    background-color: #2c2c2c;
+                    color: white;
+                    border: 1px solid #444;
+                    font-family: Roboto;
+                    font-size: 14px;
+                }
+                QMenu::item {
+                    padding: 8px 16px;
+                }
+                QMenu::item:selected {
+                    background-color: #0078d7;
+                }
+                QMenu::item:checked {
+                    background-color: #0078d7;
+                    color: white;
+                }
+            """)
+        else:
+            theme_menu.setStyleSheet("""
+                QMenu {
+                    background-color: white;
+                    color: black;
+                    border: 1px solid #ccc;
+                    font-family: Roboto;
+                    font-size: 14px;
+                }
+                QMenu::item {
+                    padding: 8px 16px;
+                }
+                QMenu::item:selected {
+                    background-color: #e0e0e0;
+                }
+                QMenu::item:checked {
+                    background-color: #0078d7;
+                    color: white;
+                }
+            """)
+
+        # Show menu at button position
+        menu_pos = self.theme_select_button.mapToGlobal(self.theme_select_button.rect().bottomLeft())
+        theme_menu.exec_(menu_pos)
+
+    def change_theme_from_settings(self, theme_name):
+        """Change theme and update the settings page label"""
+        self.change_theme(theme_name)
+        # Update the current theme label in settings
+        if hasattr(self, 'current_theme_label'):
+            self.current_theme_label.setText(f"Current: {theme_name.capitalize()}")
+    
+    def apply_settings_light_theme(self):
+        self.back_button.setStyleSheet("font-size: 20px; color: black; background-color: white;")
+        self.theme_label.setStyleSheet("font-size: 18px; color: black; font-family: Inter; margin-top: 15px;")
+        self.theme_dropdown.setFixedSize(200, 40)
+        self.theme_dropdown.setStyleSheet("""QComboBox {
+                background-color: white;
+                color: black;
+                font-size: 18px;
+                font-family: Roboto;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+            }""")
+        self.info_label.setStyleSheet("font-size: 16px; color: gray; font-family: Inter; padding: 10px;")
+        
+        self.apply_light_theme()
+        
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.overlay.setGeometry(self.centralWidget().rect())
+
+    def show_settings_page(self):
+        # Close any open sidebars first
+        if self.sidebar.isVisible():
+            self.sidebar.hide()
+        if self.right_sidebar.isVisible():
+            self.right_sidebar.hide()
+        
+        # Hide overlay
+        self.overlay.hide()
+        
+        # Switch to settings page
+        self.page_layout.setCurrentWidget(self.settings_page)
+        self.mode_label.setText("Settings")
+        self.display_container.hide()
+
+    def current_history(self):
+        return self.standard_history if self.history_stack.currentIndex() == 0 else self.advanced_history
+    
+    def add_to_history(self, expression, result):
+        """Add a new item to the appropriate history (standard/advanced)."""
+        self.history_item = f"{expression} = {result}"
+
+        if self.mode_label.text().startswith("Standard"):
+            self.standard_history.addItem(self.history_item)
+        elif self.mode_label.text().startswith("Advanced"):
+            self.advanced_history.addItem(self.history_item)
+
+    def use_history_item(self, item):
+        """Load expression back into the display when double-clicked."""
+        text = item.text()
+        if "=" in text:
+            expression, result = text.split("=", 1)
+            self.display.setText(expression.strip())
+
+    def close_sidebar_on_click(self, event):
+        """Close history if overlay is clicked"""
+        if self.sidebar.isVisible():
+            self.toggle_sidebar()
+        elif self.right_sidebar.isVisible():
+            self.toggle_history()
+        event.accept()
+
+    def toggle_history(self):
+        if self.history_open:
+                # Slide out (hide)
+                anim = QPropertyAnimation(self.right_sidebar, b"geometry")
+                anim.setDuration(250)
+                anim.setEasingCurve(QEasingCurve.InOutCubic)
+                anim.setStartValue(QRect(self.width() - 250, 0, 250, self.height()))
+                anim.setEndValue(QRect(self.width(), 0, 250, self.height()))
+                anim.finished.connect(lambda: self.right_sidebar.setVisible(False))  # ✅ hide only after animation
+                anim.start()
+                self.anim = anim
+                self.overlay.hide()
+                self.history_open = False
+        else:
+            # Slide in (show)
+            self.right_sidebar.setVisible(True)
+            self.overlay.setGeometry(self.centralWidget().rect())
+            self.overlay.show()
+            self.overlay.raise_()
+            self.right_sidebar.raise_()
+
+            anim = QPropertyAnimation(self.right_sidebar, b"geometry")
+            anim.setDuration(250)
+            anim.setEasingCurve(QEasingCurve.InOutCubic)
+            anim.setStartValue(QRect(self.width(), 0, 250, self.height()))
+            anim.setEndValue(QRect(self.width() - 250, 0, 250, self.height()))
+            anim.start()
+            self.anim = anim
+            self.history_open = True
 
     # Adding keyboard functionality
     def keyPressEvent(self, event):  # Overrides the Qt event handler for key presses
@@ -155,8 +525,6 @@ class Calculator(QMainWindow):
             # In short:
             # That line is like saying:
             # “For the keys I don’t understand, let the default system handle them.”
-
-    # CREATING THE UI
 
     def initUI(self):
         # Creating the main layout
@@ -222,14 +590,18 @@ class Calculator(QMainWindow):
         self.page_layout = QStackedWidget()
         self.standard_page = self.create_standard_calc()
         self.advanced_page = self.create_adv_calc()
+        self.conversions_page = self.create_conversions_page()
+        self.settings_page = self.create_settings_page()
 
         self.page_layout.addWidget(self.standard_page)  # Added Standard page to the stack widget
         self.page_layout.addWidget(self.advanced_page)  # Added Advanced page to the stack widget
+        self.page_layout.addWidget(self.conversions_page)  # Added Conversions page to the stack widget
+        self.page_layout.addWidget(self.settings_page)  # Added settings page to the stack widget
         self.page_layout.setCurrentWidget(self.standard_page)  # Defaults to the standard page
         main_layout.addWidget(self.page_layout)
 
-        self.conversions_page = self.create_conversions_page()
-        self.page_layout.addWidget(self.conversions_page)
+        self.settings_button.clicked.connect(self.show_settings_page)
+
 
         self.central_widget.setLayout(main_layout)
 
@@ -357,8 +729,6 @@ class Calculator(QMainWindow):
             self.apply_sunset_theme()
             self.apply_sidebar_theme_sunset()
 
-
-    # Applying light and dark mode themes to the sidebar:
     def apply_sidebar_theme_light(self):
         self.sidebar.setStyleSheet("""
                     QFrame {
@@ -660,88 +1030,63 @@ class Calculator(QMainWindow):
         self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #ffffff;")
         
     def toggle_sidebar(self):
-        sidebar_width = 200
-        sidebar_height = self.height()
-
         if self.sidebar.isVisible():
-            # Sidebar is visible → slide it out
-            start_rect = QRect(0, 0, sidebar_width, sidebar_height)
-            end_rect = QRect(-sidebar_width, 0, sidebar_width, sidebar_height)
+            # Hide sidebar
+            anim = QPropertyAnimation(self.sidebar, b"geometry")
+            anim.setDuration(250)
+            anim.setEasingCurve(QEasingCurve.InOutCubic)
+            anim.setStartValue(QRect(0, 0, 250, self.height()))     
+            anim.setEndValue(QRect(-250, 0, 250, self.height()))    
+            anim.finished.connect(lambda: self.sidebar.setVisible(False))  
+            anim.start()
+            self.anim = anim
+            self.overlay.hide()
+            self.menu_open = False
         else:
-            # Sidebar is hidden → slide it in
-            start_rect = QRect(-sidebar_width, 0, sidebar_width, sidebar_height)
-            end_rect = QRect(0, 0, sidebar_width, sidebar_height)
-            self.sidebar.setGeometry(start_rect)
-            self.sidebar.show()
+            # Show sidebar
+            self.sidebar.setVisible(True)
+            self.overlay.setGeometry(self.centralWidget().rect())
+            self.overlay.show()
+            self.overlay.raise_()
+            self.sidebar.raise_()
+            anim = QPropertyAnimation(self.sidebar, b"geometry")
+            anim.setDuration(250)
+            anim.setEasingCurve(QEasingCurve.InOutCubic)
+            anim.setStartValue(QRect(-250, 0, 250, self.height()))
+            anim.setEndValue(QRect(0, 0, 200, self.height()))
+            anim.start()
+            self.anim_sidebar = anim
 
-        # Create animation
-        self.sidebar_anim = QPropertyAnimation(self.sidebar, b"geometry")
-        self.sidebar_anim.setDuration(300)  # ms
-        self.sidebar_anim.setStartValue(start_rect)
-        self.sidebar_anim.setEndValue(end_rect)
-        self.sidebar_anim.setEasingCurve(QEasingCurve.OutCubic)
-
-        # Hide after animation if sliding out
-        if end_rect.x() < 0:
-            self.sidebar_anim.finished.connect(self.sidebar.hide)
-        else:
-            try:
-                self.sidebar_anim.finished.disconnect(self.sidebar.hide)
-            except TypeError:
-                pass
-
-        self.sidebar_anim.start()
-
-    # Creating a function to handle sidebar mode selection
     def change_mode(self, item):
         mode = item.text()
         self.mode_label.setText(mode)
 
+        if self.overlay.isVisible():
+            self.overlay.hide()
+        if hasattr(self, "right_sidebar") and self.right_sidebar.isVisible():
+            self.right_sidebar.setVisible(False)
+        if hasattr(self, "sidebar") and self.sidebar.isVisible():
+            self.sidebar.setVisible(False)
+
         if mode == 'Standard':
             self.page_layout.setCurrentWidget(self.standard_page)
-            self.set_current_history("standard")  # or "advanced"
             # If you only pass self.create_standard_calc, you are only passing the function to the change_mode
             # function, not the page, so it will throw an error
             self.display_container.show()
             self.display.clear()  # Clear the display while switching modes
+            self.history_stack.setCurrentIndex(0)  # Switch to standard history
 
         elif mode == "Advanced":
             self.page_layout.setCurrentWidget(self.advanced_page)
-            self.set_current_history("advanced")
             self.display_container.show()
             self.display.clear()
+            
 
         elif mode == "Conversions":
             self.page_layout.setCurrentWidget(self.conversions_page)
             self.display_container.hide()
         self.sidebar.hide()
         # Hide the sidebar when the user selects desired button
-
-    def toggle_theme(self):
-        if self.light_mode.isChecked():
-            self.apply_light_theme()
-            self.current_theme = "light"
-            self.apply_sidebar_theme_light()
-
-        elif self.dark_mode.isChecked():
-            self.apply_dark_theme()
-            self.current_theme = "dark"
-            self.apply_sidebar_theme_dark()
-
-        elif self.ocean_mode.isChecked():
-            self.apply_ocean_theme()
-            self.current_theme = 'ocean'
-            self.apply_sidebar_theme_ocean()
-
-        elif self.forest_mode.isChecked():
-            self.apply_forest_theme()
-            self.current_theme = 'forest'
-            self.apply_sidebar_theme_forest()
-
-        elif self.sunset_mode.isChecked():
-            self.apply_sunset_theme()
-            self.current_theme = 'sunset'
-            self.apply_sidebar_theme_sunset()
 
     def apply_light_theme(self):
         self.display.setStyleSheet("""QLineEdit {
@@ -893,48 +1238,6 @@ class Calculator(QMainWindow):
                                 background-color: #c7d2fe;
                                 }
                             """)
-
-        # Light-theme histories (apply once, not inside the button loop)
-        self.standard_history.setStyleSheet("""
-            QListWidget#standard {
-                background-color: white;
-                color: black;
-                font-size: 18px;
-                font-family: Inter;
-                border: 2px solid #999;
-                border-radius: 8px;
-                padding: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-            }
-            QListWidget::item:selected {
-                background-color: #ddd;   
-                color: black;
-            }
-        """)
-
-        self.adv_history.setStyleSheet("""
-            QListWidget#advanced {
-                background-color: white;
-                color: black;
-                font-size: 18px;
-                font-family: Inter;
-                border: 2px solid #999;
-                border-radius: 10px;
-                padding: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-            }
-            QListWidget::item:selected {
-                background-color: #ddd;   
-                color: black;
-            }
-        """)
-
-        self.adv_history.setStyleSheet(self.adv_history.styleSheet())
-        self.standard_history.setStyleSheet(self.standard_history.styleSheet())
 
         for button in self.numpad_buttons:
             text = button.text()
@@ -1178,46 +1481,7 @@ class Calculator(QMainWindow):
                             background-color: #cce9f9;
                         }
                     """)
-
-            # Histories
-            self.standard_history.setStyleSheet("""
-                QListWidget#standard {
-                    background-color: #e0f7fa !important;
-                    color: #0a3d62 !important;
-                    font-size: 18px;
-                    font-family: Inter;
-                    border: 2px solid #0277bd !important;
-                    border-radius: 8px;
-                    padding: 5px;
-                }
-                QListWidget::item {
-                    padding: 8px;
-                }
-                QListWidget::item:selected {
-                    background-color: #74a9cf !important;   
-                    color: white;
-                }
-            """)
-
-            self.adv_history.setStyleSheet("""
-                QListWidget#advanced {
-                    background-color: #e0f7fa !important;
-                    color: #0a3d62 !important;
-                    font-size: 18px;
-                    font-family: Inter;
-                    border: 2px solid #0277bd !important;
-                    border-radius: 8px;
-                    padding: 5px;
-                }
-                QListWidget::item {
-                    padding: 8px;
-                }
-                QListWidget::item:selected {
-                    background-color: #74a9cf !important;   
-                    color: white;
-                }
-            """)
-
+            
             self.conversion_list.setStyleSheet("""
                 QListWidget {
                     font-size: 18px;
@@ -1241,30 +1505,6 @@ class Calculator(QMainWindow):
                     color: white;
                 }
             """)
-
-
-        ocean_history_style = """
-            QListWidget {
-                background-color: #e0f7fa !important;
-                color: #275569 !important;
-                font-size: 18px;
-                font-family: Inter;
-                border: 2px solid #0277bd;
-                border-radius: 8px;
-                padding: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-            }
-            QListWidget::item:selected {
-                background-color: #74a9cf !important;   
-                color: white !important;
-            }
-        """
-        
-        # Force apply to both history widgets
-        self.standard_history.setStyleSheet(ocean_history_style)
-        self.adv_history.setStyleSheet(ocean_history_style)
 
     # Apply sidebar theme LAST to avoid overwriting the button styles
         self.apply_sidebar_theme_ocean()
@@ -1451,27 +1691,6 @@ class Calculator(QMainWindow):
                         background-color: #cde6d4;
                     }
                 """)
-
-        # Histories
-        self.standard_history.setStyleSheet("""
-            QListWidget#standard {
-                background-color: #f9fdf7;
-                color: #2f4430;
-                font-size: 18px;
-                font-family: Inter;
-                border: 2px solid #9cbf9c;
-                border-radius: 8px;
-                padding: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-            }
-            QListWidget::item:selected {
-                background-color: #9cbf9c;   
-                color: white;
-            }
-        """)
-        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
 
         self.conversion_list.setStyleSheet("""
             QListWidget {
@@ -1682,47 +1901,6 @@ class Calculator(QMainWindow):
                     }
                 """)
 
-        # Histories
-        self.standard_history.setStyleSheet("""
-            QListWidget#standard {
-                background-color: #fff4e6;
-                color: #4a1f1f;
-                font-size: 18px;
-                font-family: Inter;
-                border: 2px solid #f7c59f;
-                border-radius: 8px;
-                padding: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-            }
-            QListWidget::item:selected {
-                background-color: #ffcc80;   
-                color: white;
-            }
-        """)
-
-        self.adv_history.setStyleSheet("""
-            QListWidget#advanced {
-                background-color: #fff4e6;
-                color: #4a1f1f;
-                font-size: 18px;
-                font-family: Inter;
-                border: 2px solid #f7c59f;
-                border-radius: 8px;
-                padding: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-            }
-            QListWidget::item:selected {
-                background-color: #ffcc80;   
-                color: white;
-            }
-        """)
-        self.adv_history.setStyleSheet(self.adv_history.styleSheet())
-        self.standard_history.setStyleSheet(self.standard_history.styleSheet())
-
         self.conversion_list.setStyleSheet("""
             QListWidget {
                 font-size: 18px;
@@ -1929,46 +2107,6 @@ class Calculator(QMainWindow):
                     }
                             """)
 
-
-        self.standard_history.setStyleSheet("""
-                        QListWidget#standard {
-                            background-color: #2b2b2b;
-                            color: white;
-                            font-size: 18px;
-                            font-family: Inter;
-                            border: 2px solid #666;
-                            border-radius: 8px;
-                            padding: 5px;
-                        }
-                        QListWidget::item {
-                            padding: 8px;
-                        }
-                        QListWidget::item:selected {
-                            background-color: #444;  
-                            color: white;
-                        }
-                    """)
-
-        self.adv_history.setStyleSheet("""
-                                QListWidget#advanced {
-                                    background-color: #2b2b2b;
-                                    color: white;
-                                    font-size: 18px;
-                                    font-family: Inter;
-                                    border: 2px solid #666;
-                                    border-radius: 8px;
-                                    padding: 5px;
-                                }
-                                QListWidget::item {
-                                    padding: 8px;
-                                }
-                                QListWidget::item:selected {
-                                    background-color: #444;   
-                                    color: white;
-                                }
-                            """)
-        self.adv_history.setStyleSheet(self.standard_history.styleSheet())
-
         self.conversion_list.setStyleSheet("""
                     QListWidget {
                         font-size: 18px;
@@ -2000,10 +2138,6 @@ class Calculator(QMainWindow):
     def create_standard_calc(self):
         widget = QWidget()
         layout = QVBoxLayout()
-
-        # --- History ---
-        self.standard_history.itemDoubleClicked.connect(self.use_history_items)
-        layout.addWidget(self.standard_history)
 
         # --- More Functions button ---
         self.more_functions_button = QPushButton("More Functions")
@@ -2101,9 +2235,6 @@ class Calculator(QMainWindow):
         # Doing the same thing as in the create_standard_calc (re-using the universal display)
         # display container is managed by the main layout; don't add it here
 
-        self.adv_history.itemDoubleClicked.connect(self.use_history_items)
-        layout.addWidget(self.adv_history)
-
         # --- Advanced buttons grid ---
         grid = QGridLayout()
         buttons = [
@@ -2162,15 +2293,6 @@ class Calculator(QMainWindow):
         page.setLayout(layout)
         return page
 
-    # Adding a function to append expressions to the correct history widget
-    def set_current_history(self, mode):
-        if mode == "standard":
-            self.current_history = self.standard_history
-        elif mode == "advanced":
-            self.current_history = self.adv_history
-        elif mode == "conversions":
-            self.current_history = None  # Conversions page doesn't need history
-
     def action_on_click(self):
         button = self.sender()
         # return the object that triggered this event (here, clicked button is the sender)
@@ -2195,7 +2317,9 @@ class Calculator(QMainWindow):
                         self.display.setText("Error")
                     else:
                         result = math.sqrt(num)
-                        self.add_to_history("√", num, result)
+                        self.add_to_history(f"√{result}".format(value), result)
+                        self.display.setText(str(result))
+
                 else:
                     self.display.setText("Error")
 
@@ -2209,7 +2333,8 @@ class Calculator(QMainWindow):
 
                 if value:  # Checks if value is empty or not
                     result = float(value) ** 2
-                    self.add_to_history(f'{value}²', "", result)
+                    self.display.setText(str(result))
+                    self.add_to_history(f"{value}²", result)
                 else:
                     print("Error")
 
@@ -2227,7 +2352,8 @@ class Calculator(QMainWindow):
                         self.display.setText("Error")
                     else:
                         result = 1 / num
-                        self.add_to_history('1/', num, result)
+                        self.display.setText(str(result))
+                        self.add_to_history(f"1/({value})", result)
                 else:
                     self.display.setText("Error")
 
@@ -2240,7 +2366,8 @@ class Calculator(QMainWindow):
 
                 if value:
                     result = float(value) / 100
-                    self.add_to_history('%', value, result)
+                    self.display.setText(str(result))
+                    self.add_to_history(f"{value}%", result)
                 else:
                     self.display.setText("Error")
 
@@ -2254,6 +2381,7 @@ class Calculator(QMainWindow):
                 if value:
                     self.display.setText(value + ' ** ')
                     # To display in the format of '3 ** 3'
+                    self.add_to_history(f"{value}^y", "Waiting for y")
                 else:
                     self.display.setText('Error')
 
@@ -2285,40 +2413,6 @@ class Calculator(QMainWindow):
             self.display.setText(self.display.text() + text)
             # If there is no error, this will append the button's text to the text box
 
-    # Creating a function to add items to history when the extra functions / functions like √x, x², 1/x, %, etc
-    def add_to_history(self, operation, num, result, extra=""):
-        # Accept four parameters:
-        # Operation: the operation performed
-        # num: the input value before the operation
-        # result: the output value after the operation has been performed
-        # extra: optional details (like 'deg' or 'rad') which defaults to "" if nothing is given
-
-        try:
-            num_str = self.format_result(num)
-            result_str = self.format_result(result)
-
-            # Update the display:
-            self.display.setText(result_str)
-
-            # Add it to the history widget:
-            if extra:
-                self.current_history.addItem(f"{operation}{num_str}{extra} = {result_str}")
-            else:
-                self.current_history.addItem(f"{operation}{num_str} = {result_str}")
-
-        except Exception as error:
-            print("History add error", error)
-            self.display.setText("Error")
-
-    # Creating a function to let the user re-use the items stores in the history list:
-    def use_history_items(self, item):
-        # When an item in the history list is double-clicked, display that expression in the Line Edit widget
-        expression = item.text().split("=")[0].strip()
-        # Splitting the expression from the '=' sign and display the rest
-        self.display.setText(expression)
-
-    # Creating a new function to handle evaluation of expressions
-    # without having to fake an '=' click when the 'Enter' key is pressed
     def evaluate_expression(self):
 
         try:
@@ -2326,7 +2420,6 @@ class Calculator(QMainWindow):
             # Getting the expression typed in by the user
 
             original_expression = expression
-            # Keeping the original expression for adding to history
 
             # 1. Handling the nCr operation:
             if 'C' in expression and not any(func in expression for func in ['cos', 'acos']):
@@ -2339,9 +2432,8 @@ class Calculator(QMainWindow):
 
                         if n >= 0 and r >= 0 and n >= r:
                             result = math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
-                            self.current_history.addItem(f"{original_expression} = {result}")
-                            self.current_history.scrollToBottom()
                             self.display.setText(str(result))
+                            self.add_to_history(original_expression, result)
                             self.just_calculated = True
                             return
 
@@ -2365,9 +2457,8 @@ class Calculator(QMainWindow):
 
                         if n >= 0 and r >= 0 and n >= r:
                             result = math.factorial(n) // math.factorial(n - r)
-                            self.current_history.addItem(f"{original_expression} = {result}")
-                            self.current_history.scrollToBottom()
                             self.display.setText(str(result))
+                            self.add_to_history(original_expression, result)
                             self.just_calculated = True
                             return
 
@@ -2388,9 +2479,8 @@ class Calculator(QMainWindow):
                             b = float(parts[1])
                             if b != 0:
                                 result = a % b
-                                self.current_history.addItem(f"{original_expression} = {result}")
-                                self.current_history.scrollToBottom()
                                 self.display.setText(str(result))
+                                self.add_to_history(original_expression, result)
                                 self.just_calculated = True
                                 return
                             else:
@@ -2405,10 +2495,8 @@ class Calculator(QMainWindow):
 
             result = str(eval(expression))
             # Built-in function to evaluate expressions in python and then typecasting it back to a string
+            self.add_to_history(original_expression, result)
 
-            # Adding the expression to the history widget
-            self.current_history.addItem(f"{expression} = {result}")
-            self.current_history.scrollToBottom()
             self.display.setText(result)
             self.just_calculated = True
 
@@ -2418,8 +2506,6 @@ class Calculator(QMainWindow):
         except:
             self.display.setText('Error')
 
-    # Adding functions to clear the display every time a calculation has been performed and the user types in a new
-    # expression
     def calculate_result(self):
         try:
             expression = self.display.text()
@@ -2496,30 +2582,24 @@ class Calculator(QMainWindow):
             if text == "sin":
                 num_radians = math.radians(num) if self.angle_mode == "deg" else num
                 result = math.sin(num_radians)
-                self.add_to_history("sin", num, result, self.angle_mode)
 
             elif text == "cos":
                 num_radians = math.radians(num) if self.angle_mode == "deg" else num
                 result = math.cos(num_radians)
-                self.add_to_history("cos", num, result, self.angle_mode)
 
             elif text == "tan":
                 num_radians = math.radians(num) if self.angle_mode == "deg" else num
                 result = math.tan(num_radians)
-                self.add_to_history("tan", num, result, self.angle_mode)
 
             elif text == "log":
                 result = math.log10(num)
-                self.add_to_history("log", num, result)
 
             elif text == "ln":
                 result = math.log(num)
-                self.add_to_history("ln", num, result)
 
             elif text == "exp":
                 value = float(current) if current else 0
                 result = math.exp(value)
-                self.add_to_history("exp", current, result)
 
             elif text == '(':
                 self.display.setText(current + '(')
@@ -2604,32 +2684,39 @@ class Calculator(QMainWindow):
             # Mathematical functions
             if text == 'x²':
                 result = value ** 2
-                self.add_to_history(f"{value}²", value, result)
+                self.display.setText(str(result))
+                self.add_to_history(f"{value}²", result)
 
             elif text == 'x³':
                 result = value ** 3
-                self.add_to_history(f"{value}³", value, result)
+                self.display.setText(str(result))
+                self.add_to_history(f"{value}³", result)
 
             elif text == '√x':
                 result = math.sqrt(abs(value))
-                self.add_to_history(f"√{value}", value, result)
+                self.display.setText(str(result))
+                self.add_to_history(f"√{value}", result)
 
             elif text == '³√x':
                 result = value ** (1 / 3)
-                self.add_to_history(f"³√{value}", value, result)
+                self.display.setText(str(result))
+                self.add_to_history(f"³√{value}", result)
 
             elif text == '10^x':
                 result = 10 ** value
-                self.add_to_history(f"10^{value}", value, result)
+                self.display.setText(str(result))
+                self.add_to_history(f"10^{value}", result)
 
             elif text == 'exp':
                 result = math.exp(value)
-                self.add_to_history(f"e^{value}", value, result)
+                self.display.setText(str(result))
+                self.add_to_history(f"exp({value})", result)
 
             elif text == 'n!':
                 if value == int(value) and value >= 0:
                     result = math.factorial(int(value))
-                    self.add_to_history(f"{int(value)}!", int(value), result)
+                    self.display.setText(str(result))
+                    self.add_to_history(f"{int(value)}!", result)
                 else:
                     self.display.setText("Error")
                     return
@@ -2638,23 +2725,27 @@ class Calculator(QMainWindow):
             elif text == "sin":
                 angle_rad = math.radians(value) if self.angle_mode == "deg" else value
                 result = math.sin(angle_rad)
-                self.add_to_history("sin", value, result, f"({self.angle_mode})")
+                self.display.setText(str(result))
+                self.add_to_history(f"sin({value})", result)
 
             elif text == "cos":
                 angle_rad = math.radians(value) if self.angle_mode == "deg" else value
                 result = math.cos(angle_rad)
-                self.add_to_history("cos", value, result, f"({self.angle_mode})")
+                self.display.setText(str(result))
+                self.add_to_history(f"cos({value})", result)
 
             elif text == "tan":
                 angle_rad = math.radians(value) if self.angle_mode == "deg" else value
                 result = math.tan(angle_rad)
-                self.add_to_history("tan", value, result, f"({self.angle_mode})")
+                self.display.setText(str(result))
+                self.add_to_history(f"tan({value})", result)
 
             elif text == "asin":
                 if -1 <= value <= 1:
                     result_rad = math.asin(value)
                     result = math.degrees(result_rad) if self.angle_mode == "deg" else result_rad
-                    self.add_to_history("asin", value, result, f"({self.angle_mode})")
+                    self.display.setText(str(result))
+                    self.add_to_history(f"asin({value})", result)
                 else:
                     self.display.setText("Error")
                     return
@@ -2663,7 +2754,8 @@ class Calculator(QMainWindow):
                 if -1 <= value <= 1:
                     result_rad = math.acos(value)
                     result = math.degrees(result_rad) if self.angle_mode == "deg" else result_rad
-                    self.add_to_history("acos", value, result, f"({self.angle_mode})")
+                    self.display.setText(str(result))
+                    self.add_to_history(f"acos({value})", result)
                 else:
                     self.display.setText("Error")
                     return
@@ -2671,12 +2763,14 @@ class Calculator(QMainWindow):
             elif text == "atan":
                 result_rad = math.atan(value)
                 result = math.degrees(result_rad) if self.angle_mode == "deg" else result_rad
-                self.add_to_history("atan", value, result, f"({self.angle_mode})")
+                self.display.setText(str(result))
+                self.add_to_history(f"atan({value})", result)
 
             elif text == "log":
                 if value > 0:
                     result = math.log10(value)
-                    self.add_to_history("log", value, result)
+                    self.display.setText(str(result))
+                    self.add_to_history(f"log({value})", result)
                 else:
                     self.display.setText("Error")
                     return
@@ -2684,7 +2778,8 @@ class Calculator(QMainWindow):
             elif text == "ln":
                 if value > 0:
                     result = math.log(value)
-                    self.add_to_history("ln", value, result)
+                    self.display.setText(str(result))
+                    self.add_to_history(f"ln({value})", result)
                 else:
                     self.display.setText("Error")
                     return

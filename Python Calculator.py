@@ -15,7 +15,7 @@ class Calculator(QMainWindow):
 
         self.setWindowTitle("Calculator")
 
-        self.setGeometry(600, 200, 400, 700)
+        self.setGeometry(600, 200, 400, 650)
         self.setMinimumSize(400, 700)
         # Set the position of the window
 
@@ -43,7 +43,7 @@ class Calculator(QMainWindow):
         self.display.setFixedHeight(80)
         self.display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         # Reduce padding slightly so the display doesn't overhang neighboring widgets
-        self.display.setStyleSheet("font-size: 32px; padding: 8px; margin: 0px;")
+        self.display.setStyleSheet('font-family: "SF Mono", "Segoe UI", Consolas, monospace; font-size: 32px; padding: 8px; margin: 0px;')
 
         display_layout.addWidget(self.display)
         self.display_container.setLayout(display_layout)
@@ -96,7 +96,7 @@ class Calculator(QMainWindow):
 
         # History title
         history_title = QLabel("History")
-        history_title.setStyleSheet("font-size: 24px; font-weight: bold; font-family: Roboto;")
+        history_title.setStyleSheet('font-size: 24px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         right_layout.addWidget(history_title)
 
         self.history_open = False
@@ -141,42 +141,72 @@ class Calculator(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
+        # === Collapsible "Appearance" section ===
         theme_container = QWidget()
         theme_layout = QVBoxLayout(theme_container)
         theme_layout.setContentsMargins(0, 0, 0, 0)
+        theme_layout.setSpacing(5)
 
-        self.theme_toggle_button = QPushButton("Appearance  ▼")
-        self.theme_toggle_button.setFixedSize(175, 40)
+        # Create composite "Appearance" button (Title + Subtitle)
+        self.theme_toggle_button = QPushButton()
+        self.theme_toggle_button.setFixedSize(235, 60)
         self.theme_toggle_button.setCheckable(True)
         self.theme_toggle_button.setChecked(False)
+        self.theme_toggle_button.setCursor(Qt.PointingHandCursor)
         self.theme_toggle_button.setStyleSheet("""
             QPushButton {
-                text-align: left;
-                font-size: 22px;
-                font-weight: bold;
                 border: none;
-                padding: 5px;
-                font-family: Roboto;
-                border-radius: 5px;
+                border-radius: 6px;
+                background-color: transparent;
+                text-align: left;
+                padding: 8px;
             }
             QPushButton:hover {
                 background-color: #bdbdbd;
             }
         """)
+
+        # Layout for text inside the button
+        button_inner_widget = QWidget()
+        button_inner_layout = QVBoxLayout(button_inner_widget)
+        button_inner_layout.setContentsMargins(4, 2, 4, 2)
+        button_inner_layout.setSpacing(0)
+        button_inner_widget.setStyleSheet("""
+            QWidget {
+                border-radius: 6px;
+                background-color: transparent;
+            }
+            QWidget:hover {
+                background-color: #bdbdbd;
+            }
+        """)
+
+        title = QLabel("Appearance")
+        title.setStyleSheet('font-size: 25px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
+
+        button_inner_layout.setSpacing(1)
+
+        subtitle = QLabel("Select which app theme to display")
+        subtitle.setStyleSheet('font-size: 15px; color: #555; font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
+
+        button_inner_layout.addWidget(title)
+        button_inner_layout.addWidget(subtitle)
+
+        # Add text container to the button
+        button_layout = QVBoxLayout(self.theme_toggle_button)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.addWidget(button_inner_widget)
+
         theme_layout.addWidget(self.theme_toggle_button)
 
-        # Collapsible content area
+        # --- Collapsible content area ---
         self.theme_content = QFrame()
         self.theme_content.setMaximumHeight(0)
         self.theme_content.setStyleSheet("background: transparent;")
 
         theme_content_layout = QVBoxLayout(self.theme_content)
-        theme_content_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Description label
-        desc = QLabel("Select which app theme to display")
-        desc.setStyleSheet("font-size: 15px; color: #666; text-align: left;")
-        theme_layout.addWidget(desc)
+        theme_content_layout.setAlignment(Qt.AlignHCenter)
+        theme_content_layout.setSpacing(10)
 
         # Theme radio buttons
         themes = {
@@ -187,13 +217,26 @@ class Calculator(QMainWindow):
             "Sunset": "sunset"
         }
 
+        radio_style = """
+            QRadioButton {
+                font-size: 16px;
+                text-align: left;
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
+                spacing: 6px;
+            }
+            QRadioButton::indicator {
+                width: 14px;
+                height: 14px;
+            }
+        """
+
         for name, value in themes.items():
             radio = QRadioButton(name)
             radio.toggled.connect(lambda checked, v=value: checked and self.change_theme(v))
-            radio.setStyleSheet("font-size: 18px;")
-            theme_content_layout.addWidget(radio)
+            radio.setStyleSheet(radio_style)
+            theme_content_layout.addWidget(radio, alignment=Qt.AlignHCenter)
 
-        # Add the collapsible area
+        # Add collapsible area to layout
         theme_layout.addWidget(self.theme_content)
         layout.addWidget(theme_container)
 
@@ -204,14 +247,14 @@ class Calculator(QMainWindow):
 
         def toggle_theme_section():
             checked = self.theme_toggle_button.isChecked()
-            text = "Appearance  ▲" if checked else "Appearance  ▼"
-            self.theme_toggle_button.setText(text)
-            start, end = (0, self.theme_content.sizeHint().height()) if checked else (self.theme_content.height(), 0)
+            start = self.theme_content.height()
+            end = self.theme_content.sizeHint().height() if checked else 0
             self.theme_anim.setStartValue(start)
             self.theme_anim.setEndValue(end)
             self.theme_anim.start()
 
         self.theme_toggle_button.clicked.connect(toggle_theme_section)
+
 
         # Separator
         separator = QFrame()
@@ -223,27 +266,17 @@ class Calculator(QMainWindow):
         
         self.about_container = QWidget()
         self.about_layout = QVBoxLayout(self.about_container)
-        self.about_button = QPushButton("About ▼")
-        self.about_button.setFixedSize(100, 40)
-        self.about_button.setCheckable(True)
-        self.about_button.setChecked(False)
-        self.about_button.setStyleSheet("""
-            QPushButton {
-                text-align: left;
-                font-size: 22px;
+        self.about_label = QLabel("About")
+        self.about_label.setStyleSheet("""
+                text-align: left !important;
+                font-size: 25px;
                 font-weight: bold;
                 border: none;
-                padding: 5px;
-                font-family: Roboto;
-                border-radius: 5px;
-            }
-            
-            QPushButton:hover {
-                background-color: #bdbdbd;
-            }
-        """)
+                
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
+                border-radius: 5px;""")
 
-        self.about_layout.addWidget(self.about_button)
+        self.about_layout.addWidget(self.about_label)
 
         # Collapsible content area:
         self.about_content = QFrame()
@@ -252,7 +285,7 @@ class Calculator(QMainWindow):
         self.about_content_layout = QVBoxLayout(self.about_content)
 
         # About label:
-        about = QLabel("Calculator\n© 2025 Microsoft. All rights reserved.\nBuild Version: 2.01.25")
+        about = QLabel("Calculator\n© 2025 Microsoft. All rights reserved.\nBuild Version: 2.01.25\n\nIf you would like to contribute to this project or\nshare your feedback, check out the project\non Github.")
         about.setStyleSheet("font-size: 15px; color: #666; text-align: left;")
         
         self.about_layout.addWidget(about)
@@ -264,16 +297,6 @@ class Calculator(QMainWindow):
         self.about_anim = QPropertyAnimation(self.about_content, b"maximumHeight")
         self.about_anim.setDuration(250)
         self.about_anim.setEasingCurve(QEasingCurve.InOutCubic)
-
-        def toggle_about_section():
-            checked = self.about_button.isChecked()
-            text = "About ▲" if checked else "About ▼"
-            self.about_button.setText(text)
-            start, end = (0, self.about_content.sizeHint().height()) if checked else (self.about_content.height(), 0)      
-            self.about_anim.setStartValue(start)
-            self.about_anim.setEndValue(end)
-            self.about_anim.start()
-        self.about_button.clicked.connect(toggle_about_section)
 
         layout.addStretch()
 
@@ -330,7 +353,7 @@ class Calculator(QMainWindow):
                     background-color: #2c2c2c;
                     color: white;
                     border: 1px solid #444;
-                    font-family: Roboto;
+                    font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                     font-size: 14px;
                 }
                 QMenu::item {
@@ -350,7 +373,7 @@ class Calculator(QMainWindow):
                     background-color: white;
                     color: black;
                     border: 1px solid #ccc;
-                    font-family: Roboto;
+                    font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                     font-size: 14px;
                 }
                 QMenu::item {
@@ -378,17 +401,17 @@ class Calculator(QMainWindow):
     
     def apply_settings_light_theme(self):
         self.back_button.setStyleSheet("font-size: 20px; color: black; background-color: white;")
-        self.theme_label.setStyleSheet("font-size: 18px; color: black; font-family: Inter; margin-top: 15px;")
+        self.theme_label.setStyleSheet('font-size: 18px; color: black; font-family: "Segoe UI", -apple-system, Inter, sans-serif; margin-top: 15px;')
         self.theme_dropdown.setFixedSize(200, 40)
         self.theme_dropdown.setStyleSheet("""QComboBox {
                 background-color: white;
                 color: black;
                 font-size: 18px;
-                font-family: Roboto;
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }""")
-        self.info_label.setStyleSheet("font-size: 16px; color: gray; font-family: Inter; padding: 10px;")
+        self.info_label.setStyleSheet('font-size: 16px; color: gray; font-family: "Segoe UI", -apple-system, Inter, sans-serif; padding: 10px;')
         
         self.apply_light_theme()
         
@@ -402,6 +425,9 @@ class Calculator(QMainWindow):
             self.sidebar.hide()
         if self.right_sidebar.isVisible():
             self.right_sidebar.hide()
+
+        self.history_button.hide()
+        self.theme_button.hide()
         
         # Hide overlay
         self.overlay.hide()
@@ -468,8 +494,7 @@ class Calculator(QMainWindow):
             self.anim = anim
             self.history_open = True
 
-    # Adding keyboard functionality
-    def keyPressEvent(self, event):  # Overrides the Qt event handler for key presses
+    def keyPressEvent(self, event):  # Overrides the Qt event handler for key presses for keyboard functionality
         key = event.key()
         # Extracts the key code from the event
 
@@ -541,11 +566,9 @@ class Calculator(QMainWindow):
         self.menu_button.clicked.connect(self.toggle_sidebar)
 
         self.mode_label = QLabel("Standard")
-        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto;")
+        self.mode_label.setStyleSheet('font-size: 30px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         top_bar.addWidget(self.menu_button)
         top_bar.addWidget(self.mode_label)
-
-        top_bar.addWidget(self.history_button)
 
         self.theme_button = QPushButton("🎨")
         self.theme_button.setToolTip("Change Theme")
@@ -554,13 +577,15 @@ class Calculator(QMainWindow):
 
         top_bar.addStretch()  # Pushes everything to the left side
         top_bar.addWidget(self.theme_button)
+        top_bar.addWidget(self.history_button)
+
 
         main_layout.insertLayout(0, top_bar)  # Added the top bar to the main layout of the display
 
         # Adding radio buttons to allow the user to choose between degrees and radians for trigonometric functions:
         angle_mode_layout = QHBoxLayout()
         self.angle_label = QLabel("Angle mode:")
-        self.angle_label.setStyleSheet("font-size: 18px; font-family: Roboto;")
+        self.angle_label.setStyleSheet('font-size: 18px; font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
 
         self.angle_mode_combo = QComboBox()
         self.angle_mode_combo.setObjectName("angle_mode_combo")
@@ -666,7 +691,7 @@ class Calculator(QMainWindow):
                     background-color: #2c2c2c;
                     color: white;
                     border: 1px solid #444;
-                    font-family: Roboto;
+                    font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                     font-size: 14px;
                 }
                 QMenu::item {
@@ -686,7 +711,7 @@ class Calculator(QMainWindow):
                     background-color: white;
                     color: black;
                     border: 1px solid #ccc;
-                    font-family: Roboto;
+                    font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                     font-size: 14px;
                 }
                 QMenu::item {
@@ -739,12 +764,12 @@ class Calculator(QMainWindow):
                         background: transparent;
                         color: #000;
                         font-size: 16px;
-                        font-family: Roboto;
+                        font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                         border: none;
                     }
                     QListWidget::item {
                         padding: 12px;
-                        font-family: Roboto;
+                        font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                         border-radius: 8px;
                     }
                     QListWidget::item:hover {
@@ -785,7 +810,7 @@ class Calculator(QMainWindow):
                 }
             """)
         
-        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #000000;")
+        self.mode_label.setStyleSheet('font-size: 30px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif; color: #000000;')
 
     def apply_sidebar_theme_ocean(self):
         self.sidebar.setStyleSheet("""
@@ -797,12 +822,12 @@ class Calculator(QMainWindow):
                                 background: #d0ebff;
                                 color: #0b3954;
                                 font-size: 16px;
-                                font-family: Roboto;
+                                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                                 border: none;
                             }
                             QListWidget::item {
                                 padding: 12px;
-                                font-family: Roboto;
+                                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                                 border-radius: 8px;
                             }
                             QListWidget::item:hover {
@@ -845,7 +870,7 @@ class Calculator(QMainWindow):
         """)
 
         # Mode label
-        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #0a3d62;")
+        self.mode_label.setStyleSheet('font-size: 30px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif; color: #0a3d62;')
 
     def apply_sidebar_theme_forest(self):
         self.sidebar.setStyleSheet("""
@@ -857,12 +882,12 @@ class Calculator(QMainWindow):
             background: transparent;
             color: #2d3a2d;
             font-size: 16px;
-            font-family: Roboto;
+            font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
             border: none;
         }
         QListWidget::item {
             padding: 12px;
-            font-family: Roboto;
+            font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
             border-radius: 8px;
         }
         QListWidget::item:hover {
@@ -905,7 +930,7 @@ class Calculator(QMainWindow):
         """)
 
         # Mode label
-        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #2d3a2d;")
+        self.mode_label.setStyleSheet('font-size: 30px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif; color: #2d3a2d;')
 
     def apply_sidebar_theme_sunset(self):
         self.sidebar.setStyleSheet("""
@@ -917,12 +942,12 @@ class Calculator(QMainWindow):
             background: transparent;
             color: #5c2e1f;
             font-size: 16px;
-            font-family: Roboto;
+            font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
             border: none;
         }
         QListWidget::item {
             padding: 12px;
-            font-family: Roboto;
+            font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
             border-radius: 8px;
         }
         QListWidget::item:hover {
@@ -966,7 +991,7 @@ class Calculator(QMainWindow):
         """)
 
         # Mode label
-        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #5c2e1f;")
+        self.mode_label.setStyleSheet('font-size: 30px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif; color: #5c2e1f;')
 
     def apply_sidebar_theme_dark(self):
         self.sidebar.setStyleSheet("""
@@ -978,12 +1003,12 @@ class Calculator(QMainWindow):
                 background: transparent;
                 color: #fff;
                 font-size: 16px;
-                font-family: Roboto;
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                 border: none;
             }
             QListWidget#menu_list::item {
                 padding: 12px;
-                font-family: Roboto;
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                 border-radius: 8px;
             }
             QListWidget#menu_list::item:hover {
@@ -1027,7 +1052,7 @@ class Calculator(QMainWindow):
         """)
 
         # Mode label
-        self.mode_label.setStyleSheet("font-size: 30px; font-weight: bold; font-family: Roboto; color: #ffffff;")
+        self.mode_label.setStyleSheet('font-size: 30px; font-weight: bold; font-family: "Segoe UI", -apple-system, Roboto, sans-serif; color: #ffffff;')
         
     def toggle_sidebar(self):
         if self.sidebar.isVisible():
@@ -1075,12 +1100,15 @@ class Calculator(QMainWindow):
             self.display_container.show()
             self.display.clear()  # Clear the display while switching modes
             self.history_stack.setCurrentIndex(0)  # Switch to standard history
+            self.history_button.show()
+            self.theme_button.show()
 
         elif mode == "Advanced":
             self.page_layout.setCurrentWidget(self.advanced_page)
             self.display_container.show()
             self.display.clear()
-            
+            self.history_button.show()
+            self.theme_button.show()
 
         elif mode == "Conversions":
             self.page_layout.setCurrentWidget(self.conversions_page)
@@ -1093,7 +1121,7 @@ class Calculator(QMainWindow):
                 background-color: #ffffff;
                 color: #000000;
                 font-size: 42px;
-                font-family: SF Mono, monospace;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace, monospace;
                 padding: 7px;
                 border: 2px solid #999;
                 border-radius: 10px;
@@ -1108,7 +1136,7 @@ class Calculator(QMainWindow):
                 background-color: white;
                 color: black;
                 font-size: 20px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }
@@ -1116,7 +1144,7 @@ class Calculator(QMainWindow):
                 background-color: #f5f5f5;
                 color: black;
                 font-size: 20px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }
@@ -1124,7 +1152,7 @@ class Calculator(QMainWindow):
                 background-color: white;
                 color: black;
                 font-size: 18px;
-                font-family: Roboto;
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                 border: 2px solid #ccc;
                 border-radius: 8px;
             }
@@ -1138,7 +1166,7 @@ class Calculator(QMainWindow):
                         background-color: #e0e7ff;  
                         color: #1e3a8a;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #cbd5e1;
                     }
@@ -1152,7 +1180,7 @@ class Calculator(QMainWindow):
                         background-color: #f8d7da; 
                         color: #842029;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 8px;
                         border: 1px solid #f5c2c7;
                     }
@@ -1166,7 +1194,7 @@ class Calculator(QMainWindow):
                         background-color: #198754; 
                         color: white;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                     }
                     QPushButton:hover {
@@ -1182,7 +1210,7 @@ class Calculator(QMainWindow):
                                         background-color: #fbd9ff;  
                                         color: #8f249c;
                                         font-size: 22px;
-                                        font-family: Inter;
+                                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                                         border-radius: 8px;
                                         border: 1px solid #fff;
                                     }
@@ -1196,7 +1224,7 @@ class Calculator(QMainWindow):
                         background-color: #e9ecef;  
                         color: #212529;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #dee2e6;
                     }
@@ -1204,40 +1232,6 @@ class Calculator(QMainWindow):
                         background-color: #dee2e6;
                     }
                 """)
-
-        self.more_functions_button.setStyleSheet("""
-                            QPushButton {
-                                background-color: #ffebd6; 
-                                color: #cc6600;
-                                font-size: 20px;
-                                font-family: Inter;
-                                border-radius: 5px;
-                                border: 1px solid #cbd5e1;
-                            }
-                            QPushButton:hover {
-                                background-color: #ffd9b3;
-                            }
-                            QPushButton:checked {
-                                background-color: #ffd9b3;  /* ✅ Active state */
-                                border: 2px solid #cbd5e1;
-                            }
-                        """)
-
-        for button in self.extra_btn_objs:
-            button.setStyleSheet("""
-                                QPushButton {
-                                background-color: #e0e7ff;  
-                                color: #1e3a8a;
-                                font-size: 25px;
-                                font-family: Inter;
-                                border-radius: 5px;
-                                border: 1px solid #cbd5e1;
-                                }
-
-                                QPushButton:hover {
-                                background-color: #c7d2fe;
-                                }
-                            """)
 
         for button in self.numpad_buttons:
             text = button.text()
@@ -1247,7 +1241,7 @@ class Calculator(QMainWindow):
                                         background-color: #f8d7da; 
                                         color: #842029;
                                         font-size: 25px;
-                                        font-family: Inter;
+                                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                                         border-radius: 8px;
                                         border: 1px solid #f5c2c7;
                                     }
@@ -1263,7 +1257,7 @@ class Calculator(QMainWindow):
                                         border: 1px solid #dee2e6;
                                         border-radius: 5px;
                                         font-size: 25px;
-                                        font-family: Inter;
+                                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                                         color: #333;
                                     }
                                     QPushButton:hover {
@@ -1277,7 +1271,7 @@ class Calculator(QMainWindow):
                 padding: 5px;
                 border: 2px solid #ccc;
                 border-radius: 8px;
-                font-family: Inter;
+                font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                 background-color: white;
                 color: black;
             }
@@ -1307,7 +1301,7 @@ class Calculator(QMainWindow):
                 background-color: #e0f7fa;
                 color: #275569;
                 font-size: 42px;
-                font-family: SF Mono, monospace;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace, monospace;
                 padding: 7px;
                 border: 2px solid #0277bd;
                 border-radius: 8px;
@@ -1324,7 +1318,7 @@ class Calculator(QMainWindow):
                 background-color: #f1fbff;
                 color: #0a3d62;
                 font-size: 20px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 border: 2px solid #74a9cf;
                 border-radius: 8px;
             }
@@ -1332,7 +1326,7 @@ class Calculator(QMainWindow):
                     background-color: #b8eaff;
                     color: #133c55;
                     font-size: 18px;
-                    font-family: Roboto;
+                    font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                     border: 2px solid #74a9cf;
                     border-radius: 8px;
                 }
@@ -1347,7 +1341,7 @@ class Calculator(QMainWindow):
                             background-color: #bcd4e6;  
                             color: #133c55;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                             border: 1px solid #74a9cf;
                         }
@@ -1362,7 +1356,7 @@ class Calculator(QMainWindow):
                             background-color: #ffb3b3; 
                             color: #7f1d1d;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                             border: 1px solid #ff6b6b;
                         }
@@ -1376,7 +1370,7 @@ class Calculator(QMainWindow):
                             background-color: #99e2b4; 
                             color: #1b4332;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                             border: 1px solid #52b788;
                         }
@@ -1393,7 +1387,7 @@ class Calculator(QMainWindow):
                             background-color: #dbd9fc;  
                             color: #343161;
                             font-size: 22px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                         }
                         QPushButton:hover {
@@ -1406,7 +1400,7 @@ class Calculator(QMainWindow):
                             background-color: #f1fbff;  
                             color: #0a3d62;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                             border: 1px solid #cce9f9;
                         }
@@ -1414,41 +1408,6 @@ class Calculator(QMainWindow):
                             background-color: #cce9f9;
                         }
                     """)
-
-            # Extra buttons
-        for button in self.extra_btn_objs:
-                button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #e0e7ff;  
-                        color: #1e3a8a;
-                        font-size: 25px;
-                        font-family: Inter;
-                        border-radius: 5px;
-                        border: 1px solid #cbd5e1;
-                    }
-                    QPushButton:hover {
-                        background-color: #c7d2fe;
-                    }
-                """)
-
-            # More functions button
-        self.more_functions_button.setStyleSheet("""
-                QPushButton {
-                    background-color: #ffebd6; 
-                    color: #cc6600;
-                    font-size: 20px;
-                    font-family: Inter;
-                    border-radius: 5px;
-                    border: 1px solid #cbd5e1;
-                }
-                QPushButton:hover {
-                    background-color: #ffd9b3;
-                }
-                QPushButton:checked {
-                    background-color: #ffd9b3;
-                    border: 2px solid #cbd5e1;
-                }
-            """)
 
             # Numpad buttons
         for button in self.numpad_buttons:
@@ -1459,7 +1418,7 @@ class Calculator(QMainWindow):
                             background-color: #ffb3b3; 
                             color: #7f1d1d;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                             border: 1px solid #ff6b6b;
                         }
@@ -1473,7 +1432,7 @@ class Calculator(QMainWindow):
                             background-color: #f1fbff;  
                             color: #0a3d62;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                             border: 1px solid #cce9f9;
                         }
@@ -1485,7 +1444,7 @@ class Calculator(QMainWindow):
             self.conversion_list.setStyleSheet("""
                 QListWidget {
                     font-size: 18px;
-                    font-family: Inter;
+                    font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                     background-color: #f1fbff;
                     color: #0a3d62;
                     border: 2px solid #74a9cf;  
@@ -1516,7 +1475,7 @@ class Calculator(QMainWindow):
                 background-color: #f3f7f2;
                 color: #2d3a2d;
                 font-size: 42px;
-                font-family: SF Mono, monospace;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace, monospace;
                 padding: 7px;
                 border: 2px solid #a3c9a8;
                 border-radius: 8px;
@@ -1533,7 +1492,7 @@ class Calculator(QMainWindow):
                 background-color: #f9fdf7;
                 color: #2f4430;
                 font-size: 20px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 border: 2px solid #9cbf9c;
                 border-radius: 8px;
             }
@@ -1541,7 +1500,7 @@ class Calculator(QMainWindow):
                 background-color: #dbead1;
                 color: #2f4430;
                 font-size: 18px;
-                font-family: Roboto;
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                 border: 2px solid #9cbf9c;
                 border-radius: 8px;
             }
@@ -1556,7 +1515,7 @@ class Calculator(QMainWindow):
                         background-color: #cddfbf;  
                         color: #2a3d1f;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #7ba05b;
                     }
@@ -1571,7 +1530,7 @@ class Calculator(QMainWindow):
                         background-color: #f2d6c1;  
                         color: #5c2c0c;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #d4a373;
                     }
@@ -1585,7 +1544,7 @@ class Calculator(QMainWindow):
                         background-color: #8fbc8f;  
                         color: #ffffff;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #5f8d5f;
                     }
@@ -1602,7 +1561,7 @@ class Calculator(QMainWindow):
                         background-color: #e9dccd;  
                         color: #4a3728;
                         font-size: 22px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #c8ad7f;
                     }
@@ -1616,7 +1575,7 @@ class Calculator(QMainWindow):
                         background-color: #dcefe2;  
                         color: #2e4733;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #a3c9a8;
                     }
@@ -1624,41 +1583,6 @@ class Calculator(QMainWindow):
                         background-color: #cde6d4;
                     }
                 """)
-
-        # Extra buttons
-        for button in self.extra_btn_objs:
-            button.setStyleSheet("""
-                QPushButton {
-                    background-color: #e6b980;  
-                    color: #4a2c0a;
-                    font-size: 25px;
-                    font-family: Inter;
-                    border-radius: 5px;
-                    border: 1px solid #d1904f;
-                }
-                QPushButton:hover {
-                    background-color: #d9a868;
-                }
-            """)
-
-        # More functions button
-        self.more_functions_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e6b980; 
-                color: #4a2c0a;
-                font-size: 20px;
-                font-family: Inter;
-                border-radius: 5px;
-                border: 1px solid #d1904f;
-            }
-            QPushButton:hover {
-                background-color: #d9a868;
-            }
-            QPushButton:checked {
-                background-color: #d9a868;
-                border: 2px solid #c89f7a;
-            }
-        """)
 
         # Numpad buttons
         for button in self.numpad_buttons:
@@ -1669,7 +1593,7 @@ class Calculator(QMainWindow):
                         background-color: #f2d6c1;  
                         color: #5c2c0c;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #d4a373;
                     }
@@ -1683,7 +1607,7 @@ class Calculator(QMainWindow):
                         background-color: #dcefe2;  
                         color: #2e4733;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #a3c9a8;
                     }
@@ -1695,7 +1619,7 @@ class Calculator(QMainWindow):
         self.conversion_list.setStyleSheet("""
             QListWidget {
                 font-size: 18px;
-                font-family: Inter;
+                font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                 background-color: #f9fdf7;
                 color: #2f4430;
                 border: 2px solid #9cbf9c;
@@ -1725,7 +1649,7 @@ class Calculator(QMainWindow):
                 background-color: #fff4e6;
                 color: #5c2e1f;
                 font-size: 42px;
-                font-family: SF Mono, monospace;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace, monospace;
                 padding: 7px;
                 border: 2px solid #f7c59f;
                 border-radius: 8px;
@@ -1742,7 +1666,7 @@ class Calculator(QMainWindow):
                 background-color: #fff9f4;
                 color: #4a1f1f;
                 font-size: 20px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 border: 2px solid #f7c59f;
                 border-radius: 8px;
             }
@@ -1750,7 +1674,7 @@ class Calculator(QMainWindow):
                 background-color: #ffe0b2;
                 color: #4a1f1f;
                 font-size: 18px;
-                font-family: Roboto;
+                font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
                 border: 2px solid #f7c59f;
                 border-radius: 8px;
             }
@@ -1765,7 +1689,7 @@ class Calculator(QMainWindow):
                         background-color: #ffccbc;  
                         color: #5c2e1f;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #ff8a65;
                     }
@@ -1780,7 +1704,7 @@ class Calculator(QMainWindow):
                         background-color: #fcefe6; 
                         color: #6d2f1a;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #e0b7a0;
                     }
@@ -1794,7 +1718,7 @@ class Calculator(QMainWindow):
                         background-color: #ff7043; 
                         color: #ffffff;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #d84315;
                     }
@@ -1811,7 +1735,7 @@ class Calculator(QMainWindow):
                         background-color: #ffd180;
                         color: #4a2500;
                         font-size: 22px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #ffab40;
                     }
@@ -1825,7 +1749,7 @@ class Calculator(QMainWindow):
                         background-color: #ffe0b2;  
                         color: #5c2e1f;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #f7c59f;
                     }
@@ -1833,41 +1757,6 @@ class Calculator(QMainWindow):
                         background-color: #ffcc80;
                     }
                 """)
-
-        # Extra buttons
-        for button in self.extra_btn_objs:
-            button.setStyleSheet("""
-                QPushButton {
-                    background-color: #fdd9a0;  
-                    color: #5c2e1f;
-                    font-size: 25px;
-                    font-family: Inter;
-                    border-radius: 5px;
-                    border: 1px solid #f7b267;
-                }
-                QPushButton:hover {
-                    background-color: #fbb76b;
-                }
-            """)
-
-        # More functions button
-        self.more_functions_button.setStyleSheet("""
-            QPushButton {
-                background-color: #fdd9a0; 
-                color: #5c2e1f;
-                font-size: 20px;
-                font-family: Inter;
-                border-radius: 5px;
-                border: 1px solid #f7b267;
-            }
-            QPushButton:hover {
-                background-color: #fbb76b;
-            }
-            QPushButton:checked {
-                background-color: #ffab91;
-                border: 2px solid #f7c59f;
-            }
-        """)
 
         # Numpad buttons
         for button in self.numpad_buttons:
@@ -1878,7 +1767,7 @@ class Calculator(QMainWindow):
                         background-color: #fcefe6; 
                         color: #6d2f1a;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #e0b7a0;
                     }
@@ -1892,7 +1781,7 @@ class Calculator(QMainWindow):
                         background-color: #ffe0b2;  
                         color: #5c2e1f;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #f7c59f;
                     }
@@ -1904,7 +1793,7 @@ class Calculator(QMainWindow):
         self.conversion_list.setStyleSheet("""
             QListWidget {
                 font-size: 18px;
-                font-family: Inter;
+                font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                 background-color: #fff9f4;
                 color: #4a1f1f;
                 border: 2px solid #f7c59f;
@@ -1932,7 +1821,7 @@ class Calculator(QMainWindow):
                 background-color: #2b2b2b;
                 color: #ffffff;
                 font-size: 42px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 padding: 7px;
                 border: 2px solid #666666;
                 border-radius: 8px;
@@ -1948,7 +1837,7 @@ class Calculator(QMainWindow):
                 background-color: #1e1e1e;
                 color: #ffffff;
                 font-size: 23px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 border: 2px solid #444;
                 border-radius: 8px;
             }
@@ -1956,7 +1845,7 @@ class Calculator(QMainWindow):
                 background-color: #1e1e1e;
                 color: #ffffff;
                 font-size: 23px;
-                font-family: SF Mono;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace;
                 border: 2px solid #444;
                 border-radius: 8px;
             }
@@ -1964,7 +1853,7 @@ class Calculator(QMainWindow):
                 background-color: #1e1e1e;
                 color: white;
                 font-size: 18px;
-                font-family: SF Mono, monospaced;
+                font-family: "SF Mono", "Segoe UI", Consolas, monospace, monospaced;
                 border: 2px solid #444;
                 border-radius: 8px;
             }
@@ -1980,7 +1869,7 @@ class Calculator(QMainWindow):
                             border: 1px solid #7f1d1d;
                             border-radius: 5px;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             color: #fff;
                         }
                         QPushButton:hover { background-color: #7f1d1d; }
@@ -1991,7 +1880,7 @@ class Calculator(QMainWindow):
                             background-color: #2d2d2d;
                             color: #e5e7eb;
                             font-size: 25px;
-                            font-family: Inter;
+                            font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                             border-radius: 5px;
                             border: 1px solid #3f3f3f;
                         }
@@ -2007,7 +1896,7 @@ class Calculator(QMainWindow):
                         background-color: #374151;  
                         color: #93c5fd;            
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #4b5563;
                     }
@@ -2021,7 +1910,7 @@ class Calculator(QMainWindow):
                         background-color: #5b2d2d;  
                         color: #fca5a5;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #7f1d1d;
                     }
@@ -2035,7 +1924,7 @@ class Calculator(QMainWindow):
                         background-color: #14532d;  
                         color: #bbf7d0;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                     }
                     QPushButton:hover {
@@ -2050,7 +1939,7 @@ class Calculator(QMainWindow):
                                         background-color: #473a7a;  
                                         color: #bdabff;
                                         font-size: 25px;
-                                        font-family: Inter;
+                                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                                         border-radius: 8px;
                                         border: 1px solid #1e1e1e;
                                     }
@@ -2065,7 +1954,7 @@ class Calculator(QMainWindow):
                         background-color: #2d2d2d;
                         color: #e5e7eb;
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #3f3f3f;
                     }
@@ -2074,31 +1963,13 @@ class Calculator(QMainWindow):
                     }
                 """)
 
-        self.more_functions_button.setStyleSheet("""
-                            QPushButton {
-                                background-color: #3b2a1f;  
-                                color: #ff9933;
-                                font-size: 20px;
-                                font-family: Inter;
-                                border-radius: 5px;
-                                border: 1px solid #3f3f3f;
-                            }
-                            QPushButton:hover {
-                                background-color: #4a372b;
-                            }
-                            QPushButton:checked {
-                                background-color: #4a372b;  /* ✅ Active state */
-                                border: 2px solid #3f3f3f;
-                            }
-                        """)
-
         for button in self.extra_btn_objs:
             button.setStyleSheet("""
                     QPushButton {
                         background-color: #374151;  
                         color: #93c5fd;            
                         font-size: 25px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 5px;
                         border: 1px solid #4b5563;
                     }
@@ -2112,7 +1983,7 @@ class Calculator(QMainWindow):
                         font-size: 18px;
                         padding: 5px;
                         border: 2px solid #444;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         border-radius: 8px;
                         background-color: #1e1e1e;
                         color: white;
@@ -2120,7 +1991,7 @@ class Calculator(QMainWindow):
                     QListWidget::item {
                         padding: 12px;
                         border-radius: 5px;
-                        font-family: Inter;
+                        font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                         margin: 2px;
                         background-color: #1e1e1e;
                     }
@@ -2139,52 +2010,6 @@ class Calculator(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout()
 
-        # --- More Functions button ---
-        self.more_functions_button = QPushButton("More Functions")
-        self.more_functions_button.setCheckable(True)
-        self.more_functions_button.clicked.connect(self.toggle_extra_functions)
-        self.more_functions_button.setFixedHeight(40)
-        layout.addWidget(self.more_functions_button)
-
-        # --- Extra functions (trig/log etc., hidden initially) ---
-        self.extra_layout = QGridLayout()
-        self.extra_buttons = ['sin', 'cos', 'tan', 'log', 'ln', 'exp', '(', ')']
-        self.extra_btn_objs = []
-
-        tool_tips_extra = {
-            'sin': 'Sine function',
-            'cos': 'Cosine function',
-            'tan': "Tangent function",
-            'log': 'Logarithm Base-10',
-            'ln': 'Natural Logarithm',
-            'exp': 'Exponential (x * 10^x)',
-            '(': 'Open brackets',
-            ')': 'Close brackets'
-        }
-
-        row, col = 0, 0
-        for text in self.extra_buttons:
-            button = QPushButton(text)
-            button.setFixedSize(100, 50)
-            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            button.clicked.connect(self.extra_buttons_clicked)
-
-            if text in tool_tips_extra:
-                button.setToolTip(tool_tips_extra[text])
-
-            self.extra_btn_objs.append(button)
-            self.extra_layout.addWidget(button, row, col)
-
-            col += 1
-            if col > 3:  # Wrap after 2 columns for 2 x 4 grid
-                col = 0
-                row += 1
-
-        # Hiding the extra functions initially
-        for btn in self.extra_btn_objs:
-            btn.hide()
-
-        layout.addLayout(self.extra_layout)
 
         # --- Basic number/operator grid ---
         grid = QGridLayout()
@@ -2522,20 +2347,6 @@ class Calculator(QMainWindow):
             self.just_calculated = False
         self.display.insert(digit)
 
-    def toggle_extra_functions(self):
-        if self.more_functions_button.isChecked():  # ✅ button pressed
-            for btn in self.extra_btn_objs:
-                btn.show()
-            # Showing the degree and radians button when pressed
-            self.angle_label.show()
-            self.angle_mode_combo.show()
-        else:
-            for btn in self.extra_btn_objs:
-                btn.hide()
-                # Hiding the degree and radians button when pressed
-            self.angle_label.hide()
-            self.angle_mode_combo.hide()
-
     def set_angle_mode(self):
         if self.deg_mode.isChecked():
             self.angle_mode = 'deg'
@@ -2794,7 +2605,7 @@ class Calculator(QMainWindow):
         # Creating the title:
         title = QLabel("Unit Converter")
         title.setStyleSheet("font-size: 35px;"
-                            "font-family: Roboto;"
+                            'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;'
                             "font-weight: bold;"
                             "padding: 10px;")
         title.setAlignment(Qt.AlignCenter)
@@ -2808,7 +2619,7 @@ class Calculator(QMainWindow):
             self.conversion_list.setStyleSheet("""
                 QListWidget {
                     font-size: 18px;
-                    font-family: Inter;
+                    font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                     background-color: #f1fbff;
                     color: #0a3d62;
                     border: 2px solid #74a9cf;
@@ -2832,7 +2643,7 @@ class Calculator(QMainWindow):
             self.conversion_list.setStyleSheet("""
                 QListWidget {
                     font-size: 18px;
-                    font-family: Inter;
+                    font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                     background-color: #e9f5e9;
                     color: #2e4d2c;
                     border: 2px solid #a9c9a9;
@@ -2856,7 +2667,7 @@ class Calculator(QMainWindow):
             self.conversion_list.setStyleSheet("""
                 QListWidget {
                     font-size: 18px;
-                    font-family: Inter;
+                    font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                     background-color: #fff3e0;
                     color: #5c2e1f;
                     border: 2px solid #f7c59f;
@@ -2881,14 +2692,14 @@ class Calculator(QMainWindow):
                 QListWidget {
                     font-size: 18px;
                     padding: 5px;
-                    font-family: Inter;
+                    font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                     border: 2px solid #ccc;
                     border-radius: 8px;
                 }
                 QListWidget::item {
                     padding: 12px;
                     border-radius: 5px;
-                    font-family: Inter;
+                    font-family: "Segoe UI", -apple-system, Inter, sans-serif;
                     margin: 2px;
                 }
                 QListWidget::item:hover {
@@ -2915,7 +2726,7 @@ class Calculator(QMainWindow):
         instruction.setStyleSheet("font-size: 16px; "
                                   "color: #666; "
                                   "padding: 15px;"
-                                  "font-family: Roboto;")
+                                  'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         instruction.setAlignment(Qt.AlignCenter)
         layout.addWidget(instruction)
 
@@ -3115,20 +2926,19 @@ class Calculator(QMainWindow):
         back_button = QPushButton("← Back to Conversions")
         if self.current_theme == 'dark':
             back_button.setStyleSheet("font-size: 16px;"
-                                      "font-family: Roboto;")
+                                      'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         if self.current_theme == 'light':
             back_button.setStyleSheet("font-size: 16px;"
-                                      "font-family: Roboto;")
+                                      'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         if self.current_theme == 'ocean':
             back_button.setStyleSheet("font-size: 16px;"
-                                      "font-family: Roboto;")
+                                      'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         if self.current_theme == 'forest':
             back_button.setStyleSheet("font-size: 16px;"
-                                      "font-family: Roboto;")
+                                      'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         if self.current_theme == 'sunset':
             back_button.setStyleSheet("font-size: 16px;"
-                                      "font-family: Roboto;"
-)
+                                      'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
 
         # No parameters needed - uses instance variable approach
         back_button.clicked.connect(self.go_back_to_conversions)
@@ -3139,7 +2949,7 @@ class Calculator(QMainWindow):
         # Creating a title based on the selected conversion type:
         title = QLabel(f"{conversion_type} Conversion")
         title.setStyleSheet("font-size: 25px;"
-                            "font-family: Roboto;"
+                            'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;'
                             "font-weight: bold;"
                             "padding: 15px;")
         title.setAlignment(Qt.AlignCenter)
@@ -3162,7 +2972,7 @@ class Calculator(QMainWindow):
 
         from_label = QLabel("From:")
         from_label.setStyleSheet("font-size: 16px;"
-                                 "font-family: Roboto;")
+                                 'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         from_label.setFixedWidth(50)
 
         from_layout.addWidget(from_label)
@@ -3183,7 +2993,7 @@ class Calculator(QMainWindow):
 
         to_label = QLabel("To:")
         to_label.setStyleSheet("font-size: 16px;"
-                               "font-family: Roboto;")
+                               'font-family: "Segoe UI", -apple-system, Roboto, sans-serif;')
         to_label.setFixedWidth(50)
 
         to_layout.addWidget(to_label)
@@ -3195,13 +3005,13 @@ class Calculator(QMainWindow):
         # Add the conversion layout to main layout
         layout.addLayout(conversion_layout)
 
-        layout.addSpacing(70)
+        layout.addSpacing(0)
 
         # NUMPAD SECTION
         numpad_widget = QWidget()
         numpad_layout = QGridLayout()
 
-        numpad_layout.setHorizontalSpacing(1)  
+        numpad_layout.setHorizontalSpacing(0)  
         numpad_layout.setVerticalSpacing(10)   
 
 
@@ -3220,7 +3030,7 @@ class Calculator(QMainWindow):
         for row, button_row in enumerate(numpad_buttons):
             for col, button_text in enumerate(button_row):
                 button = QPushButton(button_text)
-                button.setFixedSize(100, 70)
+                button.setFixedSize(95, 65)
                 button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
                 self.numpad_buttons.append(button)
@@ -3285,6 +3095,9 @@ class Calculator(QMainWindow):
         """Return to the main conversions list"""
         self.page_layout.setCurrentWidget(self.conversions_page)
         self.mode_label.setText("Conversions")
+
+        self.history_button.show()
+        self.theme_button.show()
 
     def setup_conversion_units(self, conversion_type, from_combo, to_combo):
         """Setup the units for a specific conversion type"""
